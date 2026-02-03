@@ -83,20 +83,20 @@ class App {
     populateLessonSelect() {
         if (!this.data || !this.data.lessons) return;
 
-        this.lessonSelect.innerHTML = '<option value="">Select Lesson...</option>';
+        this.lessonSelect.innerHTML = '<option value="">Lektion auswählen...</option>';
 
         this.data.lessons.forEach((lesson) => {
             const option = document.createElement('option');
             // User requested to use the lesson number in the json
             // Since we merged and renumbered, lesson.number is the key.
             option.value = lesson.number;
-            option.textContent = `Lesson ${lesson.number}`;
+            option.textContent = `Lektion ${lesson.number}`;
             this.lessonSelect.appendChild(option);
         });
     }
 
     populatePageSelect(lessonNumber) {
-        this.pageSelect.innerHTML = '<option value="">All Pages</option>';
+        this.pageSelect.innerHTML = '<option value="">Alle Seiten</option>';
         this.pageSelect.disabled = false;
 
         // Find lesson by number
@@ -107,7 +107,7 @@ class App {
         lesson.pages.forEach((page, index) => {
             const option = document.createElement('option');
             option.value = index;
-            option.textContent = `Page ${page.number}`; // Assuming page has a number property
+            option.textContent = `Seite ${page.number}`; // Assuming page has a number property
             this.pageSelect.appendChild(option);
         });
     }
@@ -132,7 +132,7 @@ class App {
             } else {
                 this.currentLesson = null;
                 this.pageSelect.disabled = true;
-                this.pageSelect.innerHTML = '<option value="">All Pages</option>';
+                this.pageSelect.innerHTML = '<option value="">Alle Seiten</option>';
                 this.currentWords = [];
                 this.renderWords();
             }
@@ -192,7 +192,7 @@ class App {
     }
 
     updateStats() {
-        this.wordCountBadge.textContent = `${this.currentWords.length} Words`;
+        this.wordCountBadge.textContent = `${this.currentWords.length} Wörter`;
     }
 
     renderWords() {
@@ -201,8 +201,8 @@ class App {
         if (this.currentWords.length === 0) {
             this.wordListContainer.innerHTML = `
                 <div class="empty-state glass-panel">
-                    <h2>Select a Lesson</h2>
-                    <p>Choose a lesson and page to view vocabulary.</p>
+                    <h2>Lektion auswählen</h2>
+                    <p>Wählen Sie eine Lektion und Seite aus, um das Vokabular anzuzeigen.</p>
                 </div>
             `;
             return;

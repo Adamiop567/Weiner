@@ -37,7 +37,7 @@ class GameManager {
 
     startGame(type) {
         if (this.words.length < 4 && type !== 'flashcards') {
-            alert("Not enough words for this game! Please select a lesson with more words.");
+            alert("Nicht genug Wörter für dieses Spiel! Bitte wählen Sie eine Lektion mit mehr Wörtern aus.");
             return;
         }
 
@@ -102,8 +102,8 @@ class FlashcardGame {
                     </div>
                 </div>
                 <div class="game-controls" style="justify-content: center;">
-                    <button class="game-btn secondary" id="prevBtn">← Previous</button>
-                    <button class="game-btn" id="nextBtn">Next →</button>
+                    <button class="game-btn secondary" id="prevBtn">← Zurück</button>
+                    <button class="game-btn" id="nextBtn">Weiter →</button>
                 </div>
                 <div style="text-align: center; margin-top: 1rem; color: #b2bec3;">
                     <span id="fc-counter"></span>
@@ -205,7 +205,7 @@ class QuizGame {
     render(target, options) {
         this.container.innerHTML = `
             <div class="quiz-container">
-                <div style="margin-bottom: 1rem;">Score: ${this.score}</div>
+                <div style="margin-bottom: 1rem;">Punkte: ${this.score}</div>
                 <div class="quiz-question">${target.czech}</div>
                 <div class="quiz-options">
                     ${options.map(opt => `
@@ -308,7 +308,7 @@ class MemoryGame {
             this.isLocked = false;
 
             if (this.matched.length === this.cards.length) {
-                setTimeout(() => alert("Victory! Well done!"), 500);
+                setTimeout(() => alert("Sieg! Sehr gut gemacht!"), 500);
             }
         } else {
             // Mismatch
@@ -346,14 +346,14 @@ class TypingGame {
     render() {
         this.container.innerHTML = `
             <div class="typing-container">
-                <div style="margin-bottom: 2rem;">Streak: <span style="color: var(--secondary); font-size: 1.5rem;">${this.streak}</span></div>
-                <h2 style="margin-bottom: 1rem;">Translate to German:</h2>
+                <div style="margin-bottom: 2rem;">Serie: <span style="color: var(--secondary); font-size: 1.5rem;">${this.streak}</span></div>
+                <h2 style="margin-bottom: 1rem;">Ins Deutsche übersetzen:</h2>
                 <div class="quiz-question">${this.currentWord.czech}</div>
                 <div class="feedback-msg"></div>
-                <input type="text" class="typing-input" placeholder="Type German word..." autocomplete="off">
-                <button class="game-btn" id="checkBtn">Check</button>
+                <input type="text" class="typing-input" placeholder="Deutsches Wort eingeben..." autocomplete="off">
+                <button class="game-btn" id="checkBtn">Prüfen</button>
                 <div style="margin-top: 1rem;">
-                    <button class="game-btn secondary" id="hintBtn" style="font-size: 0.8rem; padding: 0.5rem 1rem;">Hint?</button>
+                    <button class="game-btn secondary" id="hintBtn" style="font-size: 0.8rem; padding: 0.5rem 1rem;">Hinweis?</button>
                 </div>
             </div>
         `;
@@ -365,11 +365,11 @@ class TypingGame {
         const check = () => {
             const val = input.value.trim();
             if (val.toLowerCase() === this.currentWord.german.toLowerCase()) {
-                this.showFeedback("Correct!", true);
+                this.showFeedback("Richtig!", true);
                 this.streak++;
                 setTimeout(() => this.nextWord(), 1000);
             } else {
-                this.showFeedback(`Incorrect. Answer: ${this.currentWord.german}`, false);
+                this.showFeedback(`Falsch. Antwort: ${this.currentWord.german}`, false);
                 this.streak = 0;
             }
         };

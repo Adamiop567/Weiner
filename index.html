@@ -23,13 +23,13 @@
             </div>
             <nav class="main-nav">
                 <button class="nav-btn active" data-view="learn">
-                    <span class="icon">📚</span> Learn
+                    <span class="icon">📚</span> Lernen
                 </button>
                 <button class="nav-btn" data-view="games">
-                    <span class="icon">🎮</span> Games
+                    <span class="icon">🎮</span> Spiele
                 </button>
                 <button class="nav-btn" data-view="stats">
-                    <span class="icon">📊</span> Stats
+                    <span class="icon">📊</span> Statistik
                 </button>
             </nav>
         </header>
@@ -38,19 +38,19 @@
             <!-- Selector Bar -->
             <section class="selection-bar glass-panel flow-row">
                 <div class="selector-group">
-                    <label>Lesson</label>
+                    <label>Lektion</label>
                     <div class="custom-select-wrapper">
                         <select id="lessonSelect">
-                            <option value="">Select Lesson...</option>
+                            <option value="">Lektion auswählen...</option>
                         </select>
                         <span class="custom-arrow"></span>
                     </div>
                 </div>
                 <div class="selector-group">
-                    <label>Page</label>
+                    <label>Seite</label>
                     <div class="custom-select-wrapper">
                         <select id="pageSelect" disabled>
-                            <option value="">All Pages</option>
+                            <option value="">Alle Seiten</option>
                         </select>
                         <span class="custom-arrow"></span>
                     </div>
@@ -66,7 +66,7 @@
                     <!-- Words will be injected here -->
                     <div class="empty-state glass-panel">
                         <h2>Willkommen!</h2>
-                        <p>Select a lesson above to start learning.</p>
+                        <p>Wählen Sie oben eine Lektion aus, um mit dem Lernen zu beginnen.</p>
                     </div>
                 </div>
             </section>
@@ -76,28 +76,28 @@
                 <div class="games-grid">
                     <div class="game-card glass-panel" data-game="flashcards">
                         <div class="game-icon">🎴</div>
-                        <h3>Flashcards</h3>
-                        <p>Classic spaced repetition.</p>
+                        <h3>Kartenflips</h3>
+                        <p>Klassische verteilte Wiederholung.</p>
                     </div>
                     <div class="game-card glass-panel" data-game="quiz">
                         <div class="game-icon">❓</div>
                         <h3>Quiz</h3>
-                        <p>Multiple choice challenge.</p>
+                        <p>Multiple-Choice-Herausforderung.</p>
                     </div>
                     <div class="game-card glass-panel" data-game="memory">
                         <div class="game-icon">🧩</div>
-                        <h3>Memory</h3>
-                        <p>Match German to Czech.</p>
+                        <h3>Gedächtnis</h3>
+                        <p>Gleichen Sie Deutsch mit Tschechisch ab.</p>
                     </div>
                     <div class="game-card glass-panel" data-game="typing">
                         <div class="game-icon">⌨️</div>
                         <h3>Schreiben</h3>
-                        <p>Type the correct translation.</p>
+                        <p>Geben Sie die korrekte Übersetzung ein.</p>
                     </div>
                 </div>
 
                 <div id="activeGameContainer" class="glass-panel hidden">
-                    <button class="back-btn">← Back to Games</button>
+                    <button class="back-btn">← Zurück zu Spielen</button>
                     <div id="gameViewport"></div>
                 </div>
             </section>
