@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,26 +37,53 @@
         <main class="app-content">
             <!-- Selector Bar -->
             <section class="selection-bar glass-panel flow-row">
+                <!-- Multi-select pro Lekce -->
                 <div class="selector-group">
-                    <label>Lektion</label>
-                    <div class="custom-select-wrapper">
-                        <select id="lessonSelect">
-                            <option value="">Lektion auswählen...</option>
-                        </select>
-                        <span class="custom-arrow"></span>
+                    <label>Lektionen (Mehrfachauswahl)</label>
+                    <div class="multiselect" id="lessonMultiselect">
+                        <div class="selectBox">
+                            <select>
+                                <option>Lektionen wählen...</option>
+                            </select>
+                            <div class="overSelect"></div>
+                        </div>
+                        <div id="checkboxes-lessons" class="checkboxes">
+                            <!-- Checkboxy se vygenerují přes JS -->
+                        </div>
                     </div>
                 </div>
+
+                <!-- Multi-select pro Stránky -->
                 <div class="selector-group">
-                    <label>Seite</label>
-                    <div class="custom-select-wrapper">
-                        <select id="pageSelect" disabled>
-                            <option value="">Alle Seiten</option>
-                        </select>
-                        <span class="custom-arrow"></span>
+                    <label>Seiten (Mehrfachauswahl)</label>
+                    <div class="multiselect" id="pageMultiselect">
+                        <div class="selectBox">
+                            <select>
+                                <option>Seiten wählen...</option>
+                            </select>
+                            <div class="overSelect"></div>
+                        </div>
+                        <div id="checkboxes-pages" class="checkboxes">
+                            <!-- Checkboxy se vygenerují přes JS -->
+                        </div>
                     </div>
                 </div>
+
+                <!-- Přepínač módů -->
+                <div class="selector-group toggle-group">
+                    <label>Sprachmodus</label>
+                    <div class="mode-toggle">
+                        <span class="mode-label">CZ ➔ DE</span>
+                        <label class="switch">
+                            <input type="checkbox" id="reverseModeToggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="mode-label">DE ➔ CZ</span>
+                    </div>
+                </div>
+
                 <div class="stats-display">
-                    <span id="wordCountBadge">0 Words</span>
+                    <span id="wordCountBadge">0 Wörter</span>
                 </div>
             </section>
 
@@ -66,7 +93,7 @@
                     <!-- Words will be injected here -->
                     <div class="empty-state glass-panel">
                         <h2>Willkommen!</h2>
-                        <p>Wählen Sie oben eine Lektion aus, um mit dem Lernen zu beginnen.</p>
+                        <p>Wähle oben Lektionen und Seiten aus, um Vokabeln anzuzeigen.</p>
                     </div>
                 </div>
             </section>
@@ -76,35 +103,52 @@
                 <div class="games-grid">
                     <div class="game-card glass-panel" data-game="flashcards">
                         <div class="game-icon">🎴</div>
-                        <h3>Kartenflips</h3>
-                        <p>Klassische verteilte Wiederholung.</p>
+                        <h3>Karteikarten</h3>
+                        <p>Klassisches Vokabeltraining.</p>
                     </div>
                     <div class="game-card glass-panel" data-game="quiz">
                         <div class="game-icon">❓</div>
                         <h3>Quiz</h3>
-                        <p>Multiple-Choice-Herausforderung.</p>
+                        <p>Multiple-Choice Herausforderung.</p>
                     </div>
                     <div class="game-card glass-panel" data-game="memory">
                         <div class="game-icon">🧩</div>
-                        <h3>Gedächtnis</h3>
-                        <p>Gleichen Sie Deutsch mit Tschechisch ab.</p>
+                        <h3>Memory</h3>
+                        <p>Finde die passenden Paare.</p>
                     </div>
                     <div class="game-card glass-panel" data-game="typing">
                         <div class="game-icon">⌨️</div>
                         <h3>Schreiben</h3>
-                        <p>Geben Sie die korrekte Übersetzung ein.</p>
+                        <p>Tippe die korrekte Übersetzung.</p>
+                    </div>
+                    <div class="game-card glass-panel" data-game="snake">
+                        <div class="game-icon">🐍</div>
+                        <h3>Snake Deutsch</h3>
+                        <p>Sammle die richtigen Wörter.</p>
+                    </div>
+                    <div class="game-card glass-panel" data-game="sentences">
+                        <div class="game-icon">🏗️</div>
+                        <h3>Satzbaumeister</h3>
+                        <p>Bilde grammatikalisch korrekte Sätze.</p>
                     </div>
                 </div>
 
                 <div id="activeGameContainer" class="glass-panel hidden">
-                    <button class="back-btn">← Zurück zu Spielen</button>
+                    <!-- Navigace ve hře -->
+                    <div class="game-header-controls">
+                        <button class="back-btn">← Zurück</button>
+                        <button class="restart-btn">↻ Neustart</button>
+                    </div>
+                    
                     <div id="gameViewport"></div>
                 </div>
             </section>
         </main>
     </div>
 
+    <!-- Scripts -->
     <script src="games.js"></script>
     <script src="script.js"></script>
+    <script src="konami.js"></script>
 </body>
 </html>
