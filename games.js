@@ -321,7 +321,7 @@ class SnakeGameLogic {
     }
 
     renderGame() {
-        const dynamicElements = this.container.querySelectorAll('.snake-segment, .snake-word-item');
+        const dynamicElements = this.container.querySelectorAll('.snake-segment, .snake-word-item, .snake-grid-marker');
         dynamicElements.forEach(el => el.remove());
         this.snake.forEach((segment, index) => {
             const isHead = index === 0;
@@ -348,6 +348,16 @@ class SnakeGameLogic {
             this.container.appendChild(el);
         });
         this.fieldWords.forEach(word => {
+            // 1. MARKER (Hitbox)
+            const marker = document.createElement('div');
+            marker.className = 'snake-grid-marker';
+            marker.style.left = `${(word.position.x / this.GRID_SIZE) * 100}%`;
+            marker.style.top = `${(word.position.y / this.GRID_SIZE) * 100}%`;
+            marker.style.width = `${100 / this.GRID_SIZE}%`;
+            marker.style.height = `${100 / this.GRID_SIZE}%`;
+            this.container.appendChild(marker);
+
+            // 2. TEXT TAG
             const el = document.createElement('div');
             el.className = 'snake-word-item';
             el.style.left = `${(word.position.x / this.GRID_SIZE) * 100}%`;
@@ -358,9 +368,12 @@ class SnakeGameLogic {
             tag.className = 'snake-word-tag';
             tag.innerText = word.text;
             tag.style.cssText = `opacity: 1; background-color: #151922; color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 4px; font-size: 0.7rem; box-shadow: 0 2px 4px rgba(0,0,0,0.3); position: absolute; white-space: nowrap; z-index: 10; top: 50%;`;
+            
+            // Smart positioning logic
             if (word.position.x < 2) { tag.style.left = '0'; tag.style.transform = 'translate(0, -50%)'; } 
             else if (word.position.x > this.GRID_SIZE - 3) { tag.style.right = '0'; tag.style.left = 'auto'; tag.style.transform = 'translate(0, -50%)'; } 
             else { tag.style.left = '50%'; tag.style.transform = 'translate(-50%, -50%)'; }
+            
             el.appendChild(tag);
             this.container.appendChild(el);
         });
@@ -383,7 +396,6 @@ class SnakeGameLogic {
         if (newDir) this.inputBuffer.push(newDir);
     }
 }
-
 /* =========================================
    2. FLASHCARDS LOGIC
    ========================================= */
