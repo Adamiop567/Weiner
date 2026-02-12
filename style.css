@@ -1238,3 +1238,21 @@ input:checked + .slider:before {
     from { transform: scale(0.5); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
+/* --- SNAKE HITBOX MARKER --- */
+.snake-grid-marker {
+    position: absolute;
+    box-sizing: border-box;
+    /* Jemný rámeček a podbarvení */
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    z-index: 9; /* Pod textem (10), ale nad mřížkou */
+    pointer-events: none;
+    animation: pulse-marker 2s infinite;
+}
+
+@keyframes pulse-marker {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
