@@ -1130,55 +1130,6 @@
           ]
         }
       ]
-    },
-    {
-      "number": 17,
-      "name": "Lekce 17",
-      "pages": [
-        {
-          "number": 75,
-          "words": [
-            { "german": "der Sommer", "plural": "-", "czech": "léto", "example": "", "cz_gender": "n" },
-            { "german": "der Winter", "plural": "-", "czech": "zima", "example": "", "cz_gender": "f" },
-            { "german": "der Berg", "plural": "-e", "czech": "hora", "example": "", "cz_gender": "f" },
-            { "german": "das Bundesland", "plural": "Bundesländer", "czech": "spolková země", "example": "", "cz_gender": "f" },
-            { "german": "geschlossen", "plural": "-", "czech": "zavřený", "example": "" },
-            { "german": "gestern", "plural": "-", "czech": "včera", "example": "" },
-            { "german": "die Grundschule", "plural": "-n", "czech": "základní škola", "example": "", "cz_gender": "f" },
-            { "german": "die Laune", "plural": "-n", "czech": "nálada", "example": "", "cz_gender": "f" },
-            { "german": "morgen", "plural": "-", "czech": "zítra", "example": "" },
-            { "german": "nervös", "plural": "-", "czech": "nervózní", "example": "" }
-          ]
-        },
-        {
-          "number": 76,
-          "words": [
-            { "german": "prima", "plural": "-", "czech": "prima", "example": "" },
-            { "german": "der Spaß", "plural": "Späße", "czech": "zábava, legrace", "example": "", "cz_gender": "f" },
-            { "german": "traurig", "plural": "-", "czech": "smutný", "example": "" },
-            { "german": "übermorgen", "plural": "-", "czech": "pozítří", "example": "" },
-            { "german": "virtuell", "plural": "-", "czech": "virtuálně", "example": "" },
-            { "german": "vorgestern", "plural": "-", "czech": "předevčírem", "example": "" },
-            { "german": "die Amtssprache", "plural": "-n", "czech": "úřední jazyk", "example": "", "cz_gender": "m" },
-            { "german": "der größte See", "plural": "-", "czech": "největší jezero", "example": "", "cz_gender": "n" },
-            { "german": "der höchste Berg", "plural": "-", "czech": "nejvyšší hora", "example": "", "cz_gender": "f" },
-            { "german": "der längste Fluss", "plural": "-", "czech": "nejdelší řeka", "example": "", "cz_gender": "f" }
-          ]
-        },
-        {
-          "number": 77,
-          "words": [
-            { "german": "die Einwohnerzahl", "plural": "-en", "czech": "počet obyvatel", "example": "", "cz_gender": "m" },
-            { "german": "die Fläche", "plural": "-n", "czech": "plocha", "example": "", "cz_gender": "f" },
-            { "german": "grenzen", "plural": "er grenzt + an (+ 4. p.)", "czech": "hraničit, sousedit", "example": "" },
-            { "german": "die Hauptstadt", "plural": "Hauptstädte", "czech": "hlavní město", "example": "", "cz_gender": "n" },
-            { "german": "die Internet-TLD", "plural": "-s", "czech": "internetová doména nejvyššího řádu", "example": "", "cz_gender": "f" },
-            { "german": "das Kfz = Kraftfahrzeug", "plural": "-e", "czech": "automobil", "example": "", "cz_gender": "m" },
-            { "german": "das Kfz-Kennzeichen", "plural": "-", "czech": "SPZ, registrační značka", "example": "", "cz_gender": "f" },
-            { "german": "km² = (der) Quadratkilometer", "plural": "-", "czech": "čtverečný kilometr", "example": "", "cz_gender": "m" }
-          ]
-        }
-      ]
     }
   ]
 }
