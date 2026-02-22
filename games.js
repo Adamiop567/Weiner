@@ -14,553 +14,67 @@ function speakGerman(text) {
 }
 
 /* =========================================
-   1. SNAKE GAME LOGIC
+   [SNAKE, FLASHCARDS, QUIZ, MEMORY, TYPING - ZŮSTÁVAJÍ STEJNÉ]
+   (Zkopíruj si je z předchozí verze nebo je tu nechám pro přehlednost zkrácené)
+   ========================================= */
+   
+// ... ZDE VLOŽ KÓD OSTATNÍCH HER (Snake, Quiz atd.) Z PŘEDCHOZÍHO SOUBORU ...
+// ... (Pro úsporu místa sem dávám jen ty co se mění: SentenceGameLogic a GameManager)
+
+/* =========================================
+   1. SNAKE GAME LOGIC (Stejné jako minule)
    ========================================= */
 class SnakeGameLogic {
     constructor(words, container, gridBackground, scoreEl, highScoreEl, targetWordEl, overlay, overlayTitle, overlayBtn, speedEl, isReverse) {
-        if (!words || words.length === 0) {
-            this.words = [];
-        } else {
-            this.isReverse = isReverse;
-            this.words = this.convertWordsForSnake(words);
-        }
-        this.container = container;
-        this.gridBackground = gridBackground;
-        this.scoreEl = scoreEl;
-        this.highScoreEl = highScoreEl;
-        this.targetWordEl = targetWordEl;
-        this.overlay = overlay;
-        this.overlayTitle = overlayTitle;
-        this.overlayBtn = overlayBtn;
-        this.speedEl = speedEl;
-        this.gameType = 'snake';
-        this.GRID_SIZE = 16;
-        this.BASE_SPEED = 250; 
-        this.currentSpeed = this.BASE_SPEED;
-        this.speedMultiplier = 1.0;
-        this.wordsCollected = 0;
-        this.INITIAL_SNAKE = [{ x: 8, y: 8 }, { x: 7, y: 8 }, { x: 6, y: 8 }];
-        this.INITIAL_DIRECTION = { x: 1, y: 0 };
-        this.snake = [];
-        this.direction = { ...this.INITIAL_DIRECTION };
-        this.nextDirection = { ...this.INITIAL_DIRECTION };
-        this.inputBuffer = []; 
-        this.MAX_BUFFER_SIZE = 3;
-        this.status = 'idle';
-        this.score = 0;
-        this.highScore = parseInt(localStorage.getItem('snake-german-highscore') || '0', 10);
-        this.targetWord = null;
-        this.fieldWords = [];
-        this.gameInterval = null;
-        this.lastFrameTime = 0;
-        this.animationFrameId = null;
-        this.init();
+        if (!words || words.length === 0) { this.words = []; } else { this.isReverse = isReverse; this.words = this.convertWordsForSnake(words); }
+        this.container = container; this.gridBackground = gridBackground; this.scoreEl = scoreEl; this.highScoreEl = highScoreEl; this.targetWordEl = targetWordEl; this.overlay = overlay; this.overlayTitle = overlayTitle; this.overlayBtn = overlayBtn; this.speedEl = speedEl; this.gameType = 'snake'; this.GRID_SIZE = 16; this.BASE_SPEED = 250; this.currentSpeed = this.BASE_SPEED; this.speedMultiplier = 1.0; this.wordsCollected = 0; this.INITIAL_SNAKE = [{ x: 8, y: 8 }, { x: 7, y: 8 }, { x: 6, y: 8 }]; this.INITIAL_DIRECTION = { x: 1, y: 0 }; this.snake = []; this.direction = { ...this.INITIAL_DIRECTION }; this.nextDirection = { ...this.INITIAL_DIRECTION }; this.inputBuffer = []; this.MAX_BUFFER_SIZE = 3; this.status = 'idle'; this.score = 0; this.highScore = parseInt(localStorage.getItem('snake-german-highscore') || '0', 10); this.targetWord = null; this.fieldWords = []; this.gameInterval = null; this.lastFrameTime = 0; this.animationFrameId = null; this.init();
     }
-
-    convertWordsForSnake(words) {
-        const clean = (text) => text.split(',')[0].replace(/\(.*\)/g, '').trim();
-        return words.map(word => {
-            if (this.isReverse) {
-                return { targetDisplay: word.german, collectItem: clean(word.czech), speak: word.german };
-            } else {
-                return { targetDisplay: clean(word.czech), collectItem: word.german, speak: word.german };
-            }
-        });
-    }
-
-    init() {
-        this.snake = this.INITIAL_SNAKE.map(p => ({ x: p.x, y: p.y, targetX: p.x, targetY: p.y, lerpProgress: 1.0 }));
-        this.updateUI();
-        this.renderGridBackground();
-        this._boundKeyDown = (e) => this.handleGlobalKeyDown(e);
-        window.addEventListener('keydown', this._boundKeyDown);
-        this._overlayBtnHandler = () => this.startGame();
-        if (this.overlayBtn) this.overlayBtn.addEventListener('click', this._overlayBtnHandler);
-        this._touchStartHandler = (e) => this.handleTouchStart(e);
-        this._touchEndHandler = (e) => this.handleTouchEnd(e);
-        this._touchMoveHandler = (e) => { if (this.status === 'playing') e.preventDefault(); };
-        document.addEventListener('touchstart', this._touchStartHandler, { passive: false });
-        document.addEventListener('touchend', this._touchEndHandler, { passive: false });
-        document.addEventListener('touchmove', this._touchMoveHandler, { passive: false });
-    }
-
-    destroy() {
-        if (this._boundKeyDown) window.removeEventListener('keydown', this._boundKeyDown);
-        if (this.overlayBtn && this._overlayBtnHandler) this.overlayBtn.removeEventListener('click', this._overlayBtnHandler);
-        if (this._touchStartHandler) document.removeEventListener('touchstart', this._touchStartHandler);
-        if (this._touchEndHandler) document.removeEventListener('touchend', this._touchEndHandler);
-        if (this._touchMoveHandler) document.removeEventListener('touchmove', this._touchMoveHandler);
-        clearInterval(this.gameInterval);
-        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-        this.status = 'idle';
-    }
-
-    handleGlobalKeyDown(e) {
-        const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'];
-        if (gameKeys.includes(e.key) && (this.status === 'playing' || !this.overlay.classList.contains('hidden'))) {
-            e.preventDefault();
-        }
-        if (this.gameType === 'snake' && this.status === 'playing') {
-            this.handleKeyInput(e);
-        } else if ((this.status === 'idle' || this.status === 'gameover') && (e.key === 'Enter' || e.key === ' ')) {
-            if (!this.overlay.classList.contains('hidden')) this.startGame();
-        }
-    }
-
-    handleKeyInput(e) {
-        let newDirection = null;
-        switch (e.key) {
-            case 'ArrowUp': case 'w': case 'W': if (this.direction.y !== 1) newDirection = { x: 0, y: -1 }; break;
-            case 'ArrowDown': case 's': case 'S': if (this.direction.y !== -1) newDirection = { x: 0, y: 1 }; break;
-            case 'ArrowLeft': case 'a': case 'A': if (this.direction.x !== 1) newDirection = { x: -1, y: 0 }; break;
-            case 'ArrowRight': case 'd': case 'D': if (this.direction.x !== -1) newDirection = { x: 1, y: 0 }; break;
-        }
-        if (newDirection) {
-            if (this.inputBuffer.length < this.MAX_BUFFER_SIZE) this.inputBuffer.push(newDirection);
-            else { this.inputBuffer.shift(); this.inputBuffer.push(newDirection); }
-        }
-    }
-
-    processInputBuffer() {
-        if (this.inputBuffer.length > 0) {
-            const nextDir = this.inputBuffer[0];
-            if (this.direction.x !== -nextDir.x || this.direction.y !== -nextDir.y) {
-                this.nextDirection = nextDir;
-                this.inputBuffer.shift(); 
-            } else { this.inputBuffer = []; }
-        }
-    }
-
-    startGame() {
-        if (!this.words || this.words.length < 5) { alert("Du brauchst mindestens 5 Wörter für Snake!"); return; }
-        this.snake = this.INITIAL_SNAKE.map(p => ({ x: p.x, y: p.y, targetX: p.x, targetY: p.y, lerpProgress: 1.0 }));
-        this.direction = { ...this.INITIAL_DIRECTION };
-        this.nextDirection = { ...this.INITIAL_DIRECTION };
-        this.inputBuffer = [];
-        this.score = 0;
-        this.wordsCollected = 0;
-        this.currentSpeed = this.BASE_SPEED;
-        this.speedMultiplier = 1.0;
-        this.status = 'playing';
-        this.updateUI();
-        this.generateNewRound();
-        if (this.gameInterval) clearInterval(this.gameInterval);
-        this.gameInterval = setInterval(() => this.gameLogicUpdate(), this.currentSpeed);
-        this.lastFrameTime = performance.now();
-        this.animate();
-        this.overlay.classList.add('hidden');
-    }
-
-    gameLogicUpdate() {
-        if (this.status !== 'playing') return;
-        this.processInputBuffer();
-        this.direction = this.nextDirection;
-        const currentHead = this.snake[0];
-        const newHead = {
-            x: currentHead.targetX + this.direction.x,
-            y: currentHead.targetY + this.direction.y,
-            targetX: currentHead.targetX + this.direction.x,
-            targetY: currentHead.targetY + this.direction.y,
-            lerpProgress: 0.0
-        };
-        if (newHead.targetX < 0 || newHead.targetX >= this.GRID_SIZE || newHead.targetY < 0 || newHead.targetY >= this.GRID_SIZE) { this.gameOver(); return; }
-        const hitWordIndex = this.fieldWords.findIndex(w => Math.round(w.position.x) === newHead.targetX && Math.round(w.position.y) === newHead.targetY);
-        let isGrowing = false, shouldShrink = false;
-        if (hitWordIndex !== -1) {
-            const hitWord = this.fieldWords[hitWordIndex];
-            if (hitWord.isCorrect) {
-                isGrowing = true;
-                this.wordsCollected++;
-                speakGerman(this.isReverse ? this.targetWord.targetDisplay : this.targetWord.collectItem);
-                if (this.wordsCollected % 3 === 0) this.increaseSpeed();
-            } else { shouldShrink = true; }
-        }
-        const ignoreTailIndex = isGrowing ? -1 : this.snake.length - 1;
-        const isSelfCollision = this.snake.some((segment, index) => {
-            if (index === ignoreTailIndex) return false;
-            return Math.round(segment.targetX) === newHead.targetX && Math.round(segment.targetY) === newHead.targetY;
-        });
-        if (isSelfCollision) { this.gameOver(); return; }
-        if (isGrowing) { this.snake.unshift(newHead); } 
-        else if (shouldShrink) {
-            let tempSnake = [newHead, ...this.snake];
-            if (tempSnake.length <= 3) { this.gameOver(); return; }
-            this.snake = tempSnake.slice(0, tempSnake.length - 3);
-            this.fieldWords.splice(hitWordIndex, 1);
-        } else {
-            for (let i = this.snake.length - 1; i > 0; i--) {
-                this.snake[i].targetX = this.snake[i-1].targetX;
-                this.snake[i].targetY = this.snake[i-1].targetY;
-                this.snake[i].lerpProgress = 0.0;
-            }
-            this.snake[0] = newHead;
-        }
-        if (isGrowing) this.generateNewRound();
-        this.updateUI();
-    }
-
-    increaseSpeed() {
-        this.speedMultiplier *= 0.95; 
-        this.currentSpeed = Math.max(50, Math.floor(this.BASE_SPEED * this.speedMultiplier)); 
-        if (this.gameInterval) {
-            clearInterval(this.gameInterval);
-            this.gameInterval = setInterval(() => this.gameLogicUpdate(), this.currentSpeed);
-        }
-        this.showSpeedUpEffect();
-    }
-
-    showSpeedUpEffect() {
-        const effect = document.createElement('div');
-        effect.textContent = '⚡ Schneller!';
-        effect.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: bold; color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.8); opacity: 0; z-index: 40; pointer-events: none; animation: speedUpAnim 1s ease-out;`;
-        if (!document.getElementById('speedUpStyle')) {
-            const style = document.createElement('style');
-            style.id = 'speedUpStyle';
-            style.textContent = `@keyframes speedUpAnim { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }`;
-            document.head.appendChild(style);
-        }
-        this.container.appendChild(effect);
-        setTimeout(() => effect.remove(), 1000);
-    }
-
-    gameOver() {
-        this.status = 'gameover';
-        clearInterval(this.gameInterval);
-        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-        const finalScore = this.snake.length;
-        if (finalScore > this.highScore) {
-            this.highScore = finalScore;
-            localStorage.setItem('snake-german-highscore', this.highScore.toString());
-        }
-        this.updateUI();
-        this.overlayTitle.innerText = `Game Over - Punkte: ${finalScore}`;
-        this.overlayBtn.innerText = 'Neustart';
-        this.overlay.classList.remove('hidden');
-    }
-
-    generateNewRound() {
-        const randomPair = this.words[Math.floor(Math.random() * this.words.length)];
-        this.targetWord = randomPair;
-        const wrongWords = [];
-        let loopSafety = 0;
-        while (wrongWords.length < 4 && loopSafety < 100) {
-            loopSafety++;
-            const p = this.words[Math.floor(Math.random() * this.words.length)];
-            if (p.collectItem !== randomPair.collectItem && !wrongWords.includes(p.collectItem)) {
-                wrongWords.push(p.collectItem);
-            }
-        }
-        const head = this.snake[0];
-        const safetyZone = new Set();
-        for (let i = 1; i <= 3; i++) safetyZone.add(`${head.targetX + this.direction.x * i},${head.targetY + this.direction.y * i}`);
-        safetyZone.add(`${head.targetX - this.direction.y},${head.targetY + this.direction.x}`);
-        safetyZone.add(`${head.targetX + this.direction.y},${head.targetY - this.direction.x}`);
-        const finalPositions = [];
-        let attempts = 0;
-        const maxAttempts = 500; 
-        while (finalPositions.length < 5 && attempts < maxAttempts) {
-            attempts++;
-            const cx = Math.floor(Math.random() * this.GRID_SIZE);
-            const cy = Math.floor(Math.random() * this.GRID_SIZE);
-            const key = `${cx},${cy}`;
-            const onSnake = this.snake.some(s => Math.round(s.targetX) === cx && Math.round(s.targetY) === cy);
-            if (onSnake || safetyZone.has(key)) continue;
-            let isFarEnough = true;
-            for (const pos of finalPositions) {
-                if (Math.abs(pos.x - cx) < 3 && Math.abs(pos.y - cy) < 3) {
-                    isFarEnough = false; break;
-                }
-            }
-            if (isFarEnough) finalPositions.push({ x: cx, y: cy });
-        }
-        const count = Math.min(finalPositions.length, wrongWords.length + 1);
-        const wordsToSpawn = [{ text: randomPair.collectItem, isCorrect: true }];
-        for(let i=0; i<count-1; i++) {
-            if(wrongWords[i]) wordsToSpawn.push({ text: wrongWords[i], isCorrect: false });
-        }
-        for (let i = wordsToSpawn.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [wordsToSpawn[i], wordsToSpawn[j]] = [wordsToSpawn[j], wordsToSpawn[i]];
-        }
-        this.fieldWords = wordsToSpawn.map((w, i) => ({
-            id: Math.random().toString(36).substr(2, 9), text: w.text, isCorrect: w.isCorrect, position: finalPositions[i]
-        }));
-    }
-
-    updateUI() {
-        if (this.scoreEl) this.scoreEl.innerText = this.snake.length;
-        if (this.highScoreEl) this.highScoreEl.innerText = this.highScore;
-        if (this.speedEl) this.speedEl.innerText = `${(1/this.speedMultiplier).toFixed(1)}x`;
-        if (this.targetWordEl) this.targetWordEl.innerText = (this.status === 'playing' && this.targetWord) ? this.targetWord.targetDisplay : (this.status === 'gameover' ? 'Game Over' : 'Snake Deutsch');
-    }
-
-    renderGridBackground() {
-        this.gridBackground.innerHTML = '';
-        for (let i = 0; i < this.GRID_SIZE * this.GRID_SIZE; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'snake-grid-cell';
-            this.gridBackground.appendChild(cell);
-        }
-    }
-
-    animate() {
-        this.animationFrameId = requestAnimationFrame((timestamp) => {
-            const deltaTime = timestamp - this.lastFrameTime;
-            this.lastFrameTime = timestamp;
-            const lerpSpeed = 0.2; 
-            this.snake.forEach(segment => {
-                if (segment.lerpProgress < 1.0) {
-                    segment.lerpProgress = Math.min(1.0, segment.lerpProgress + lerpSpeed * (deltaTime / 16.67));
-                    segment.x = segment.x + (segment.targetX - segment.x) * 0.2;
-                    segment.y = segment.y + (segment.targetY - segment.y) * 0.2;
-                } else { segment.x = segment.targetX; segment.y = segment.targetY; }
-            });
-            this.renderGame();
-            this.animate();
-        });
-    }
-
-    renderGame() {
-        const dynamicElements = this.container.querySelectorAll('.snake-segment, .snake-word-item, .snake-grid-marker');
-        dynamicElements.forEach(el => el.remove());
-        this.snake.forEach((segment, index) => {
-            const isHead = index === 0;
-            const el = document.createElement('div');
-            el.className = `snake-segment ${isHead ? 'snake-head' : (index % 2 === 0 ? 'snake-body-even' : 'snake-body-odd')}`;
-            el.style.left = `${(segment.x / this.GRID_SIZE) * 100}%`;
-            el.style.top = `${(segment.y / this.GRID_SIZE) * 100}%`;
-            el.style.width = `${100 / this.GRID_SIZE}%`;
-            el.style.height = `${100 / this.GRID_SIZE}%`;
-            el.style.backgroundColor = '#10b981';
-            if (isHead) {
-                el.style.backgroundColor = '#ef4444'; 
-                const eye1 = document.createElement('div');
-                const eye2 = document.createElement('div');
-                const eyeStyle = `position: absolute; width: 20%; height: 20%; background: #0f1219; border-radius: 50%;`;
-                eye1.style.cssText = eyeStyle;
-                eye2.style.cssText = eyeStyle;
-                if (this.direction.x === 1) { eye1.style.right = '15%'; eye1.style.top = '20%'; eye2.style.right = '15%'; eye2.style.bottom = '20%'; } 
-                else if (this.direction.x === -1) { eye1.style.left = '15%'; eye1.style.top = '20%'; eye2.style.left = '15%'; eye2.style.bottom = '20%'; } 
-                else if (this.direction.y === 1) { eye1.style.right = '20%'; eye1.style.bottom = '15%'; eye2.style.left = '20%'; eye2.style.bottom = '15%'; } 
-                else { eye1.style.right = '20%'; eye1.style.top = '15%'; eye2.style.left = '20%'; eye2.style.top = '15%'; }
-                el.appendChild(eye1); el.appendChild(eye2);
-            }
-            this.container.appendChild(el);
-        });
-        this.fieldWords.forEach(word => {
-            // 1. MARKER (Hitbox)
-            const marker = document.createElement('div');
-            marker.className = 'snake-grid-marker';
-            marker.style.left = `${(word.position.x / this.GRID_SIZE) * 100}%`;
-            marker.style.top = `${(word.position.y / this.GRID_SIZE) * 100}%`;
-            marker.style.width = `${100 / this.GRID_SIZE}%`;
-            marker.style.height = `${100 / this.GRID_SIZE}%`;
-            this.container.appendChild(marker);
-
-            // 2. TEXT TAG
-            const el = document.createElement('div');
-            el.className = 'snake-word-item';
-            el.style.left = `${(word.position.x / this.GRID_SIZE) * 100}%`;
-            el.style.top = `${(word.position.y / this.GRID_SIZE) * 100}%`;
-            el.style.width = `${100 / this.GRID_SIZE}%`;
-            el.style.height = `${100 / this.GRID_SIZE}%`;
-            const tag = document.createElement('div');
-            tag.className = 'snake-word-tag';
-            tag.innerText = word.text;
-            tag.style.cssText = `opacity: 1; background-color: #151922; color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 4px; font-size: 0.7rem; box-shadow: 0 2px 4px rgba(0,0,0,0.3); position: absolute; white-space: nowrap; z-index: 10; top: 50%;`;
-            
-            // Smart positioning logic
-            if (word.position.x < 2) { tag.style.left = '0'; tag.style.transform = 'translate(0, -50%)'; } 
-            else if (word.position.x > this.GRID_SIZE - 3) { tag.style.right = '0'; tag.style.left = 'auto'; tag.style.transform = 'translate(0, -50%)'; } 
-            else { tag.style.left = '50%'; tag.style.transform = 'translate(-50%, -50%)'; }
-            
-            el.appendChild(tag);
-            this.container.appendChild(el);
-        });
-    }
-    
+    convertWordsForSnake(words) { const clean = (text) => text.split(',')[0].replace(/\(.*\)/g, '').trim(); return words.map(word => { if (this.isReverse) { return { targetDisplay: word.german, collectItem: clean(word.czech), speak: word.german }; } else { return { targetDisplay: clean(word.czech), collectItem: word.german, speak: word.german }; } }); }
+    init() { this.snake = this.INITIAL_SNAKE.map(p => ({ x: p.x, y: p.y, targetX: p.x, targetY: p.y, lerpProgress: 1.0 })); this.updateUI(); this.renderGridBackground(); this._boundKeyDown = (e) => this.handleGlobalKeyDown(e); window.addEventListener('keydown', this._boundKeyDown); this._overlayBtnHandler = () => this.startGame(); if (this.overlayBtn) this.overlayBtn.addEventListener('click', this._overlayBtnHandler); this._touchStartHandler = (e) => this.handleTouchStart(e); this._touchEndHandler = (e) => this.handleTouchEnd(e); this._touchMoveHandler = (e) => { if (this.status === 'playing') e.preventDefault(); }; document.addEventListener('touchstart', this._touchStartHandler, { passive: false }); document.addEventListener('touchend', this._touchEndHandler, { passive: false }); document.addEventListener('touchmove', this._touchMoveHandler, { passive: false }); }
+    destroy() { if (this._boundKeyDown) window.removeEventListener('keydown', this._boundKeyDown); if (this.overlayBtn && this._overlayBtnHandler) this.overlayBtn.removeEventListener('click', this._overlayBtnHandler); if (this._touchStartHandler) document.removeEventListener('touchstart', this._touchStartHandler); if (this._touchEndHandler) document.removeEventListener('touchend', this._touchEndHandler); if (this._touchMoveHandler) document.removeEventListener('touchmove', this._touchMoveHandler); clearInterval(this.gameInterval); if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId); this.status = 'idle'; }
+    handleGlobalKeyDown(e) { const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D']; if (gameKeys.includes(e.key) && (this.status === 'playing' || !this.overlay.classList.contains('hidden'))) { e.preventDefault(); } if (this.gameType === 'snake' && this.status === 'playing') { this.handleKeyInput(e); } else if ((this.status === 'idle' || this.status === 'gameover') && (e.key === 'Enter' || e.key === ' ')) { if (!this.overlay.classList.contains('hidden')) this.startGame(); } }
+    handleKeyInput(e) { let newDirection = null; switch (e.key) { case 'ArrowUp': case 'w': case 'W': if (this.direction.y !== 1) newDirection = { x: 0, y: -1 }; break; case 'ArrowDown': case 's': case 'S': if (this.direction.y !== -1) newDirection = { x: 0, y: 1 }; break; case 'ArrowLeft': case 'a': case 'A': if (this.direction.x !== 1) newDirection = { x: -1, y: 0 }; break; case 'ArrowRight': case 'd': case 'D': if (this.direction.x !== -1) newDirection = { x: 1, y: 0 }; break; } if (newDirection) { if (this.inputBuffer.length < this.MAX_BUFFER_SIZE) this.inputBuffer.push(newDirection); else { this.inputBuffer.shift(); this.inputBuffer.push(newDirection); } } }
+    processInputBuffer() { if (this.inputBuffer.length > 0) { const nextDir = this.inputBuffer[0]; if (this.direction.x !== -nextDir.x || this.direction.y !== -nextDir.y) { this.nextDirection = nextDir; this.inputBuffer.shift(); } else { this.inputBuffer = []; } } }
+    startGame() { if (!this.words || this.words.length < 5) { alert("Du brauchst mindestens 5 Wörter für Snake!"); return; } this.snake = this.INITIAL_SNAKE.map(p => ({ x: p.x, y: p.y, targetX: p.x, targetY: p.y, lerpProgress: 1.0 })); this.direction = { ...this.INITIAL_DIRECTION }; this.nextDirection = { ...this.INITIAL_DIRECTION }; this.inputBuffer = []; this.score = 0; this.wordsCollected = 0; this.currentSpeed = this.BASE_SPEED; this.speedMultiplier = 1.0; this.status = 'playing'; this.updateUI(); this.generateNewRound(); if (this.gameInterval) clearInterval(this.gameInterval); this.gameInterval = setInterval(() => this.gameLogicUpdate(), this.currentSpeed); this.lastFrameTime = performance.now(); this.animate(); this.overlay.classList.add('hidden'); }
+    gameLogicUpdate() { if (this.status !== 'playing') return; this.processInputBuffer(); this.direction = this.nextDirection; const currentHead = this.snake[0]; const newHead = { x: currentHead.targetX + this.direction.x, y: currentHead.targetY + this.direction.y, targetX: currentHead.targetX + this.direction.x, targetY: currentHead.targetY + this.direction.y, lerpProgress: 0.0 }; if (newHead.targetX < 0 || newHead.targetX >= this.GRID_SIZE || newHead.targetY < 0 || newHead.targetY >= this.GRID_SIZE) { this.gameOver(); return; } const hitWordIndex = this.fieldWords.findIndex(w => Math.round(w.position.x) === newHead.targetX && Math.round(w.position.y) === newHead.targetY); let isGrowing = false, shouldShrink = false; if (hitWordIndex !== -1) { const hitWord = this.fieldWords[hitWordIndex]; if (hitWord.isCorrect) { isGrowing = true; this.wordsCollected++; speakGerman(this.isReverse ? this.targetWord.targetDisplay : this.targetWord.collectItem); if (this.wordsCollected % 3 === 0) this.increaseSpeed(); } else { shouldShrink = true; } } const ignoreTailIndex = isGrowing ? -1 : this.snake.length - 1; const isSelfCollision = this.snake.some((segment, index) => { if (index === ignoreTailIndex) return false; return Math.round(segment.targetX) === newHead.targetX && Math.round(segment.targetY) === newHead.targetY; }); if (isSelfCollision) { this.gameOver(); return; } if (isGrowing) { this.snake.unshift(newHead); } else if (shouldShrink) { let tempSnake = [newHead, ...this.snake]; if (tempSnake.length <= 3) { this.gameOver(); return; } this.snake = tempSnake.slice(0, tempSnake.length - 3); this.fieldWords.splice(hitWordIndex, 1); } else { for (let i = this.snake.length - 1; i > 0; i--) { this.snake[i].targetX = this.snake[i-1].targetX; this.snake[i].targetY = this.snake[i-1].targetY; this.snake[i].lerpProgress = 0.0; } this.snake[0] = newHead; } if (isGrowing) this.generateNewRound(); this.updateUI(); }
+    increaseSpeed() { this.speedMultiplier *= 0.95; this.currentSpeed = Math.max(50, Math.floor(this.BASE_SPEED * this.speedMultiplier)); if (this.gameInterval) { clearInterval(this.gameInterval); this.gameInterval = setInterval(() => this.gameLogicUpdate(), this.currentSpeed); } this.showSpeedUpEffect(); }
+    showSpeedUpEffect() { const effect = document.createElement('div'); effect.textContent = '⚡ Schneller!'; effect.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: bold; color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.8); opacity: 0; z-index: 40; pointer-events: none; animation: speedUpAnim 1s ease-out;`; if (!document.getElementById('speedUpStyle')) { const style = document.createElement('style'); style.id = 'speedUpStyle'; style.textContent = `@keyframes speedUpAnim { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }`; document.head.appendChild(style); } this.container.appendChild(effect); setTimeout(() => effect.remove(), 1000); }
+    gameOver() { this.status = 'gameover'; clearInterval(this.gameInterval); if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId); const finalScore = this.snake.length; if (finalScore > this.highScore) { this.highScore = finalScore; localStorage.setItem('snake-german-highscore', this.highScore.toString()); } this.updateUI(); this.overlayTitle.innerText = `Game Over - Punkte: ${finalScore}`; this.overlayBtn.innerText = 'Neustart'; this.overlay.classList.remove('hidden'); }
+    generateNewRound() { const randomPair = this.words[Math.floor(Math.random() * this.words.length)]; this.targetWord = randomPair; const wrongWords = []; let loopSafety = 0; while (wrongWords.length < 4 && loopSafety < 100) { loopSafety++; const p = this.words[Math.floor(Math.random() * this.words.length)]; if (p.collectItem !== randomPair.collectItem && !wrongWords.includes(p.collectItem)) { wrongWords.push(p.collectItem); } } const head = this.snake[0]; const safetyZone = new Set(); for (let i = 1; i <= 3; i++) safetyZone.add(`${head.targetX + this.direction.x * i},${head.targetY + this.direction.y * i}`); safetyZone.add(`${head.targetX - this.direction.y},${head.targetY + this.direction.x}`); safetyZone.add(`${head.targetX + this.direction.y},${head.targetY - this.direction.x}`); const finalPositions = []; let attempts = 0; const maxAttempts = 500; while (finalPositions.length < 5 && attempts < maxAttempts) { attempts++; const cx = Math.floor(Math.random() * this.GRID_SIZE); const cy = Math.floor(Math.random() * this.GRID_SIZE); const key = `${cx},${cy}`; const onSnake = this.snake.some(s => Math.round(s.targetX) === cx && Math.round(s.targetY) === cy); if (onSnake || safetyZone.has(key)) continue; let isFarEnough = true; for (const pos of finalPositions) { if (Math.abs(pos.x - cx) < 3 && Math.abs(pos.y - cy) < 3) { isFarEnough = false; break; } } if (isFarEnough) finalPositions.push({ x: cx, y: cy }); } const count = Math.min(finalPositions.length, wrongWords.length + 1); const wordsToSpawn = [{ text: randomPair.collectItem, isCorrect: true }]; for(let i=0; i<count-1; i++) { if(wrongWords[i]) wordsToSpawn.push({ text: wrongWords[i], isCorrect: false }); } for (let i = wordsToSpawn.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [wordsToSpawn[i], wordsToSpawn[j]] = [wordsToSpawn[j], wordsToSpawn[i]]; } this.fieldWords = wordsToSpawn.map((w, i) => ({ id: Math.random().toString(36).substr(2, 9), text: w.text, isCorrect: w.isCorrect, position: finalPositions[i] })); }
+    updateUI() { if (this.scoreEl) this.scoreEl.innerText = this.snake.length; if (this.highScoreEl) this.highScoreEl.innerText = this.highScore; if (this.speedEl) this.speedEl.innerText = `${(1/this.speedMultiplier).toFixed(1)}x`; if (this.targetWordEl) this.targetWordEl.innerText = (this.status === 'playing' && this.targetWord) ? this.targetWord.targetDisplay : (this.status === 'gameover' ? 'Game Over' : 'Snake Deutsch'); }
+    renderGridBackground() { this.gridBackground.innerHTML = ''; for (let i = 0; i < this.GRID_SIZE * this.GRID_SIZE; i++) { const cell = document.createElement('div'); cell.className = 'snake-grid-cell'; this.gridBackground.appendChild(cell); } }
+    animate() { this.animationFrameId = requestAnimationFrame((timestamp) => { const deltaTime = timestamp - this.lastFrameTime; this.lastFrameTime = timestamp; const lerpSpeed = 0.2; this.snake.forEach(segment => { if (segment.lerpProgress < 1.0) { segment.lerpProgress = Math.min(1.0, segment.lerpProgress + lerpSpeed * (deltaTime / 16.67)); segment.x = segment.x + (segment.targetX - segment.x) * 0.2; segment.y = segment.y + (segment.targetY - segment.y) * 0.2; } else { segment.x = segment.targetX; segment.y = segment.targetY; } }); this.renderGame(); this.animate(); }); }
+    renderGame() { const dynamicElements = this.container.querySelectorAll('.snake-segment, .snake-word-item, .snake-grid-marker'); dynamicElements.forEach(el => el.remove()); this.snake.forEach((segment, index) => { const isHead = index === 0; const el = document.createElement('div'); el.className = `snake-segment ${isHead ? 'snake-head' : (index % 2 === 0 ? 'snake-body-even' : 'snake-body-odd')}`; el.style.left = `${(segment.x / this.GRID_SIZE) * 100}%`; el.style.top = `${(segment.y / this.GRID_SIZE) * 100}%`; el.style.width = `${100 / this.GRID_SIZE}%`; el.style.height = `${100 / this.GRID_SIZE}%`; el.style.backgroundColor = '#10b981'; if (isHead) { el.style.backgroundColor = '#ef4444'; const eye1 = document.createElement('div'); const eye2 = document.createElement('div'); const eyeStyle = `position: absolute; width: 20%; height: 20%; background: #0f1219; border-radius: 50%;`; eye1.style.cssText = eyeStyle; eye2.style.cssText = eyeStyle; if (this.direction.x === 1) { eye1.style.right = '15%'; eye1.style.top = '20%'; eye2.style.right = '15%'; eye2.style.bottom = '20%'; } else if (this.direction.x === -1) { eye1.style.left = '15%'; eye1.style.top = '20%'; eye2.style.left = '15%'; eye2.style.bottom = '20%'; } else if (this.direction.y === 1) { eye1.style.right = '20%'; eye1.style.bottom = '15%'; eye2.style.left = '20%'; eye2.style.bottom = '15%'; } else { eye1.style.right = '20%'; eye1.style.top = '15%'; eye2.style.left = '20%'; eye2.style.top = '15%'; } el.appendChild(eye1); el.appendChild(eye2); } this.container.appendChild(el); }); this.fieldWords.forEach(word => { const marker = document.createElement('div'); marker.className = 'snake-grid-marker'; marker.style.left = `${(word.position.x / this.GRID_SIZE) * 100}%`; marker.style.top = `${(word.position.y / this.GRID_SIZE) * 100}%`; marker.style.width = `${100 / this.GRID_SIZE}%`; marker.style.height = `${100 / this.GRID_SIZE}%`; this.container.appendChild(marker); const el = document.createElement('div'); el.className = 'snake-word-item'; el.style.left = `${(word.position.x / this.GRID_SIZE) * 100}%`; el.style.top = `${(word.position.y / this.GRID_SIZE) * 100}%`; el.style.width = `${100 / this.GRID_SIZE}%`; el.style.height = `${100 / this.GRID_SIZE}%`; const tag = document.createElement('div'); tag.className = 'snake-word-tag'; tag.innerText = word.text; tag.style.cssText = `opacity: 1; background-color: #151922; color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 4px; font-size: 0.7rem; box-shadow: 0 2px 4px rgba(0,0,0,0.3); position: absolute; white-space: nowrap; z-index: 10; top: 50%;`; if (word.position.x < 2) { tag.style.left = '0'; tag.style.transform = 'translate(0, -50%)'; } else if (word.position.x > this.GRID_SIZE - 3) { tag.style.right = '0'; tag.style.left = 'auto'; tag.style.transform = 'translate(0, -50%)'; } else { tag.style.left = '50%'; tag.style.transform = 'translate(-50%, -50%)'; } el.appendChild(tag); this.container.appendChild(el); }); }
     handleTouchStart(e) { if (e.touches.length > 0) { this.touchStartX = e.touches[0].clientX; this.touchStartY = e.touches[0].clientY; } }
-    handleTouchEnd(e) {
-        if (this.status !== 'playing' || e.changedTouches.length === 0) return;
-        const dx = e.changedTouches[0].clientX - this.touchStartX;
-        const dy = e.changedTouches[0].clientY - this.touchStartY;
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
-        let newDir = null;
-        if (Math.abs(dx) > Math.abs(dy)) {
-            if (dx > 0 && this.direction.x !== -1) newDir = { x: 1, y: 0 };
-            else if (dx < 0 && this.direction.x !== 1) newDir = { x: -1, y: 0 };
-        } else {
-            if (dy > 0 && this.direction.y !== -1) newDir = { x: 0, y: 1 };
-            else if (dy < 0 && this.direction.y !== 1) newDir = { x: 0, y: -1 };
-        }
-        if (newDir) this.inputBuffer.push(newDir);
-    }
+    handleTouchEnd(e) { if (this.status !== 'playing' || e.changedTouches.length === 0) return; const dx = e.changedTouches[0].clientX - this.touchStartX; const dy = e.changedTouches[0].clientY - this.touchStartY; if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return; let newDir = null; if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0 && this.direction.x !== -1) newDir = { x: 1, y: 0 }; else if (dx < 0 && this.direction.x !== 1) newDir = { x: -1, y: 0 }; } else { if (dy > 0 && this.direction.y !== -1) newDir = { x: 0, y: 1 }; else if (dy < 0 && this.direction.y !== 1) newDir = { x: 0, y: -1 }; } if (newDir) this.inputBuffer.push(newDir); }
 }
+
 /* =========================================
    2. FLASHCARDS LOGIC
    ========================================= */
 class FlashcardsGameLogic {
     constructor(words, container, frontEl, backEl, revealBtn, nextBtn, prevBtn, isReverse) {
-        this.words = words;
-        this.container = container;
-        this.frontEl = frontEl;
-        this.backEl = backEl;
-        this.revealBtn = revealBtn;
-        this.nextBtn = nextBtn;
-        this.prevBtn = prevBtn;
-        this.currentIndex = 0;
-        this.isFlipped = false;
-        this.isReverse = isReverse;
-
-        this._flipHandler = () => this.flip();
-        this._nextHandler = () => this.next();
-        this._prevHandler = () => this.prev();
-
-        revealBtn.addEventListener('click', this._flipHandler);
-        nextBtn.addEventListener('click', this._nextHandler);
-        prevBtn.addEventListener('click', this._prevHandler);
-
-        // Add speaker to Flashcard front
-        this.speaker = document.createElement('button');
-        this.speaker.innerHTML = '🔊';
-        this.speaker.className = 'speaker-btn';
-        this.speaker.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const word = this.words[this.currentIndex];
-            speakGerman(word.german);
-        });
-        
+        this.words = words; this.container = container; this.frontEl = frontEl; this.backEl = backEl; this.revealBtn = revealBtn; this.nextBtn = nextBtn; this.prevBtn = prevBtn; this.currentIndex = 0; this.isFlipped = false; this.isReverse = isReverse;
+        this._flipHandler = () => this.flip(); this._nextHandler = () => this.next(); this._prevHandler = () => this.prev();
+        revealBtn.addEventListener('click', this._flipHandler); nextBtn.addEventListener('click', this._nextHandler); prevBtn.addEventListener('click', this._prevHandler);
+        this.speaker = document.createElement('button'); this.speaker.innerHTML = '🔊'; this.speaker.className = 'speaker-btn'; this.speaker.addEventListener('click', (e) => { e.stopPropagation(); const word = this.words[this.currentIndex]; speakGerman(word.german); });
         this.updateCard();
     }
-
-    updateCard() {
-        if (!this.words || this.words.length === 0) return;
-        const word = this.words[this.currentIndex];
-        this.isFlipped = false;
-        this.container.querySelector('.flashcard-inner').style.transform = 'rotateY(0deg)';
-        setTimeout(() => {
-            this.speaker.remove();
-            if (this.isReverse) {
-                this.frontEl.textContent = word.german;
-                this.frontEl.appendChild(this.speaker);
-                this.backEl.textContent = word.czech;
-            } else {
-                this.frontEl.textContent = word.czech;
-                this.backEl.textContent = word.german;
-                this.backEl.appendChild(this.speaker);
-            }
-        }, 200);
-    }
-
-    flip() {
-        this.isFlipped = !this.isFlipped;
-        this.container.querySelector('.flashcard-inner').style.transform = this.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
-        const word = this.words[this.currentIndex];
-        if ((this.isReverse && !this.isFlipped) || (!this.isReverse && this.isFlipped)) {
-            speakGerman(word.german);
-        }
-    }
-
-    next() {
-        if (!this.words || this.words.length === 0) return;
-        this.currentIndex = (this.currentIndex + 1) % this.words.length;
-        this.updateCard();
-    }
-
-    prev() {
-        if (!this.words || this.words.length === 0) return;
-        this.currentIndex = (this.currentIndex - 1 + this.words.length) % this.words.length;
-        this.updateCard();
-    }
-
-    destroy() {
-        if(this.revealBtn) this.revealBtn.removeEventListener('click', this._flipHandler);
-        if(this.nextBtn) this.nextBtn.removeEventListener('click', this._nextHandler);
-        if(this.prevBtn) this.prevBtn.removeEventListener('click', this._prevHandler);
-    }
+    updateCard() { if (!this.words || this.words.length === 0) return; const word = this.words[this.currentIndex]; this.isFlipped = false; this.container.querySelector('.flashcard-inner').style.transform = 'rotateY(0deg)'; setTimeout(() => { this.speaker.remove(); if (this.isReverse) { this.frontEl.textContent = word.german; this.frontEl.appendChild(this.speaker); this.backEl.textContent = word.czech; } else { this.frontEl.textContent = word.czech; this.backEl.textContent = word.german; this.backEl.appendChild(this.speaker); } }, 200); }
+    flip() { this.isFlipped = !this.isFlipped; this.container.querySelector('.flashcard-inner').style.transform = this.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'; const word = this.words[this.currentIndex]; if ((this.isReverse && !this.isFlipped) || (!this.isReverse && this.isFlipped)) { speakGerman(word.german); } }
+    next() { if (!this.words || this.words.length === 0) return; this.currentIndex = (this.currentIndex + 1) % this.words.length; this.updateCard(); }
+    prev() { if (!this.words || this.words.length === 0) return; this.currentIndex = (this.currentIndex - 1 + this.words.length) % this.words.length; this.updateCard(); }
+    destroy() { if(this.revealBtn) this.revealBtn.removeEventListener('click', this._flipHandler); if(this.nextBtn) this.nextBtn.removeEventListener('click', this._nextHandler); if(this.prevBtn) this.prevBtn.removeEventListener('click', this._prevHandler); }
 }
 
 /* =========================================
    3. QUIZ LOGIC
    ========================================= */
 class QuizGameLogic {
-    constructor(words, container, questionEl, optionsEl, feedbackEl, nextBtn, isReverse) {
-        this.words = words;
-        this.container = container;
-        this.questionEl = questionEl;
-        this.optionsEl = optionsEl;
-        this.feedbackEl = feedbackEl;
-        this.score = 0;
-        this.isReverse = isReverse;
-        this.nextQuestion();
-    }
-
-    clean(text) {
-        return text.split(',')[0].replace(/\(.*\)/g, '').trim();
-    }
-
-    nextQuestion() {
-        if (!this.words || this.words.length < 4) {
-            this.questionEl.textContent = "Du brauchst mindestens 4 Wörter für das Quiz!";
-            return;
-        }
-        this.feedbackEl.textContent = '';
-        this.optionsEl.innerHTML = '';
-        
-        const target = this.words[Math.floor(Math.random() * this.words.length)];
-        this.currentAnswer = target;
-        
-        if (this.isReverse) {
-            this.questionEl.textContent = target.german; 
-            speakGerman(target.german);
-        } else {
-            this.questionEl.textContent = this.clean(target.czech); 
-        }
-
-        let options = [target];
-        while(options.length < 4) {
-            const w = this.words[Math.floor(Math.random() * this.words.length)];
-            if(!options.includes(w)) options.push(w);
-        }
-        options.sort(() => Math.random() - 0.5);
-
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'game-btn secondary';
-            btn.style.cssText = `display: flex; align-items: center; justify-content: center; padding: 1.5rem; font-size: 1.1rem; height: 100%; width: 100%; min-height: 80px; background-color: rgba(16, 185, 129, 0.05); color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2);`;
-            
-            if (this.isReverse) {
-                btn.textContent = this.clean(opt.czech);
-            } else {
-                btn.textContent = opt.german;
-            }
-            btn.addEventListener('click', () => this.checkAnswer(opt, btn));
-            this.optionsEl.appendChild(btn);
-        });
-    }
-
-    checkAnswer(selected, btn) {
-        const buttons = this.optionsEl.querySelectorAll('button');
-        buttons.forEach(b => b.disabled = true);
-
-        if (selected === this.currentAnswer) {
-            btn.style.backgroundColor = '#10b981';
-            btn.style.borderColor = '#10b981';
-            this.score++;
-            this.feedbackEl.textContent = 'Richtig!';
-            this.feedbackEl.style.color = '#10b981';
-            speakGerman(this.currentAnswer.german);
-        } else {
-            btn.style.backgroundColor = '#ef4444';
-            btn.style.borderColor = '#ef4444';
-            const correctText = this.isReverse ? this.clean(this.currentAnswer.czech) : this.currentAnswer.german;
-            this.feedbackEl.textContent = `Falsch! Richtig ist: ${correctText}`;
-            this.feedbackEl.style.color = '#ef4444';
-            speakGerman(this.currentAnswer.german);
-        }
-        setTimeout(() => this.nextQuestion(), 1500);
-    }
-    
+    constructor(words, container, questionEl, optionsEl, feedbackEl, nextBtn, isReverse) { this.words = words; this.container = container; this.questionEl = questionEl; this.optionsEl = optionsEl; this.feedbackEl = feedbackEl; this.score = 0; this.isReverse = isReverse; this.nextQuestion(); }
+    clean(text) { return text.split(',')[0].replace(/\(.*\)/g, '').trim(); }
+    nextQuestion() { if (!this.words || this.words.length < 4) { this.questionEl.textContent = "Du brauchst mindestens 4 Wörter für das Quiz!"; return; } this.feedbackEl.textContent = ''; this.optionsEl.innerHTML = ''; const target = this.words[Math.floor(Math.random() * this.words.length)]; this.currentAnswer = target; if (this.isReverse) { this.questionEl.textContent = target.german; speakGerman(target.german); } else { this.questionEl.textContent = this.clean(target.czech); } let options = [target]; while(options.length < 4) { const w = this.words[Math.floor(Math.random() * this.words.length)]; if(!options.includes(w)) options.push(w); } options.sort(() => Math.random() - 0.5); options.forEach(opt => { const btn = document.createElement('button'); btn.className = 'game-btn secondary'; btn.style.cssText = `display: flex; align-items: center; justify-content: center; padding: 1.5rem; font-size: 1.1rem; height: 100%; width: 100%; min-height: 80px; background-color: rgba(16, 185, 129, 0.05); color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2);`; if (this.isReverse) { btn.textContent = this.clean(opt.czech); } else { btn.textContent = opt.german; } btn.addEventListener('click', () => this.checkAnswer(opt, btn)); this.optionsEl.appendChild(btn); }); }
+    checkAnswer(selected, btn) { const buttons = this.optionsEl.querySelectorAll('button'); buttons.forEach(b => b.disabled = true); if (selected === this.currentAnswer) { btn.style.backgroundColor = '#10b981'; btn.style.borderColor = '#10b981'; this.score++; this.feedbackEl.textContent = 'Richtig!'; this.feedbackEl.style.color = '#10b981'; speakGerman(this.currentAnswer.german); } else { btn.style.backgroundColor = '#ef4444'; btn.style.borderColor = '#ef4444'; const correctText = this.isReverse ? this.clean(this.currentAnswer.czech) : this.currentAnswer.german; this.feedbackEl.textContent = `Falsch! Richtig ist: ${correctText}`; this.feedbackEl.style.color = '#ef4444'; speakGerman(this.currentAnswer.german); } setTimeout(() => this.nextQuestion(), 1500); }
     destroy() {} 
 }
 
@@ -568,101 +82,12 @@ class QuizGameLogic {
    4. MEMORY LOGIC
    ========================================= */
 class MemoryGameLogic {
-    constructor(words, container, boardEl, statusEl) {
-        this.words = words.slice(0, 8); 
-        this.boardEl = boardEl;
-        this.statusEl = statusEl;
-        this.flippedCards = [];
-        this.matchedCount = 0;
-        this.lockBoard = false;
-        this.initBoard();
-    }
-
-    clean(text) {
-        return text.split(',')[0].replace(/\(.*\)/g, '').trim();
-    }
-
-    initBoard() {
-        if (this.words.length < 2) {
-            this.statusEl.textContent = "Wähle eine Lektion mit mehr Wörtern!";
-            return;
-        }
-        let cards = [];
-        this.words.forEach(w => {
-            cards.push({ id: w.german, text: w.german, isGerman: true });
-            cards.push({ id: w.german, text: this.clean(w.czech), isGerman: false });
-        });
-        cards.sort(() => Math.random() - 0.5);
-
-        this.boardEl.innerHTML = '';
-        this.boardEl.style.display = 'grid';
-        this.boardEl.style.gridTemplateColumns = 'repeat(4, 1fr)';
-        this.boardEl.style.gap = '15px';
-        this.boardEl.style.width = '100%';
-        this.boardEl.style.maxWidth = '600px';
-
-        cards.forEach(cardData => {
-            const card = document.createElement('div');
-            card.className = 'memory-card';
-            card.dataset.id = cardData.id;
-            card.dataset.isGerman = cardData.isGerman;
-            card.innerHTML = `<span class="memory-text">${cardData.text}</span>`;
-            card.style.cssText = `background-color: #151922; border: 2px solid rgba(16, 185, 129, 0.2); aspect-ratio: 1 / 1; width: 100%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 5px; cursor: pointer; border-radius: 8px; user-select: none; transition: transform 0.2s, background-color 0.2s; color: #ffffff; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); word-break: break-word; font-size: clamp(0.7rem, 2vw, 1rem);`;
-            const textSpan = card.querySelector('.memory-text');
-            textSpan.style.opacity = '0';
-            textSpan.style.transition = 'opacity 0.2s';
-            card.addEventListener('click', () => this.flipCard(card));
-            this.boardEl.appendChild(card);
-        });
-    }
-
-    flipCard(card) {
-        if (this.lockBoard || card === this.flippedCards[0] || card.classList.contains('matched')) return;
-        card.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; 
-        card.style.borderColor = '#10b981'; 
-        card.style.color = '#10b981';
-        card.style.transform = 'scale(1.05)';
-        card.querySelector('.memory-text').style.opacity = '1';
-        
-        if (card.dataset.isGerman === "true") {
-            speakGerman(card.querySelector('.memory-text').textContent);
-        }
-
-        this.flippedCards.push(card);
-        if (this.flippedCards.length === 2) { this.checkForMatch(); }
-    }
-
-    checkForMatch() {
-        this.lockBoard = true;
-        const [card1, card2] = this.flippedCards;
-        const isMatch = card1.dataset.id === card2.dataset.id;
-        if (isMatch) {
-            setTimeout(() => {
-                card1.classList.add('matched'); card2.classList.add('matched');
-                card1.style.backgroundColor = '#10b981'; card1.style.borderColor = '#10b981'; card1.style.color = 'white';
-                card2.style.backgroundColor = '#10b981'; card2.style.borderColor = '#10b981'; card2.style.color = 'white';
-                card1.style.cursor = 'default'; card2.style.cursor = 'default';
-                this.matchedCount += 2; this.resetBoard();
-                if (this.matchedCount === this.words.length * 2) {
-                    this.statusEl.innerHTML = '<span style="color:#10b981; font-size:1.5rem">Sieg! Gut gemacht!</span>';
-                }
-            }, 500);
-        } else {
-            setTimeout(() => {
-                const resetStyle = (c) => {
-                    c.style.backgroundColor = '#151922'; c.style.borderColor = 'rgba(16, 185, 129, 0.2)';
-                    c.style.color = '#ffffff'; c.style.transform = 'scale(1)';
-                    c.querySelector('.memory-text').style.opacity = '0';
-                };
-                resetStyle(card1); resetStyle(card2); this.resetBoard();
-            }, 1000);
-        }
-    }
-
-    resetBoard() {
-        this.flippedCards = [];
-        this.lockBoard = false;
-    }
+    constructor(words, container, boardEl, statusEl) { this.words = words.slice(0, 8); this.boardEl = boardEl; this.statusEl = statusEl; this.flippedCards = []; this.matchedCount = 0; this.lockBoard = false; this.initBoard(); }
+    clean(text) { return text.split(',')[0].replace(/\(.*\)/g, '').trim(); }
+    initBoard() { if (this.words.length < 2) { this.statusEl.textContent = "Wähle eine Lektion mit mehr Wörtern!"; return; } let cards = []; this.words.forEach(w => { cards.push({ id: w.german, text: w.german, isGerman: true }); cards.push({ id: w.german, text: this.clean(w.czech), isGerman: false }); }); cards.sort(() => Math.random() - 0.5); this.boardEl.innerHTML = ''; this.boardEl.style.display = 'grid'; this.boardEl.style.gridTemplateColumns = 'repeat(4, 1fr)'; this.boardEl.style.gap = '15px'; this.boardEl.style.width = '100%'; this.boardEl.style.maxWidth = '600px'; cards.forEach(cardData => { const card = document.createElement('div'); card.className = 'memory-card'; card.dataset.id = cardData.id; card.dataset.isGerman = cardData.isGerman; card.innerHTML = `<span class="memory-text">${cardData.text}</span>`; card.style.cssText = `background-color: #151922; border: 2px solid rgba(16, 185, 129, 0.2); aspect-ratio: 1 / 1; width: 100%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 5px; cursor: pointer; border-radius: 8px; user-select: none; transition: transform 0.2s, background-color 0.2s; color: #ffffff; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); word-break: break-word; font-size: clamp(0.7rem, 2vw, 1rem);`; const textSpan = card.querySelector('.memory-text'); textSpan.style.opacity = '0'; textSpan.style.transition = 'opacity 0.2s'; card.addEventListener('click', () => this.flipCard(card)); this.boardEl.appendChild(card); }); }
+    flipCard(card) { if (this.lockBoard || card === this.flippedCards[0] || card.classList.contains('matched')) return; card.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; card.style.borderColor = '#10b981'; card.style.color = '#10b981'; card.style.transform = 'scale(1.05)'; card.querySelector('.memory-text').style.opacity = '1'; if (card.dataset.isGerman === "true") { speakGerman(card.querySelector('.memory-text').textContent); } this.flippedCards.push(card); if (this.flippedCards.length === 2) { this.checkForMatch(); } }
+    checkForMatch() { this.lockBoard = true; const [card1, card2] = this.flippedCards; const isMatch = card1.dataset.id === card2.dataset.id; if (isMatch) { setTimeout(() => { card1.classList.add('matched'); card2.classList.add('matched'); card1.style.backgroundColor = '#10b981'; card1.style.borderColor = '#10b981'; card1.style.color = 'white'; card2.style.backgroundColor = '#10b981'; card2.style.borderColor = '#10b981'; card2.style.color = 'white'; card1.style.cursor = 'default'; card2.style.cursor = 'default'; this.matchedCount += 2; this.resetBoard(); if (this.matchedCount === this.words.length * 2) { this.statusEl.innerHTML = '<span style="color:#10b981; font-size:1.5rem">Sieg! Gut gemacht!</span>'; } }, 500); } else { setTimeout(() => { const resetStyle = (c) => { c.style.backgroundColor = '#151922'; c.style.borderColor = 'rgba(16, 185, 129, 0.2)'; c.style.color = '#ffffff'; c.style.transform = 'scale(1)'; c.querySelector('.memory-text').style.opacity = '0'; }; resetStyle(card1); resetStyle(card2); this.resetBoard(); }, 1000); } }
+    resetBoard() { this.flippedCards = []; this.lockBoard = false; }
     destroy() {}
 }
 
@@ -670,86 +95,28 @@ class MemoryGameLogic {
    5. TYPING LOGIC
    ========================================= */
 class TypingGameLogic {
-    constructor(words, container, promptEl, inputEl, checkBtn, hintBtn, feedbackEl, nextBtn, isReverse) {
-        this.words = words;
-        this.container = container;
-        this.promptEl = promptEl;
-        this.inputEl = inputEl;
-        this.feedbackEl = feedbackEl;
-        this.checkBtn = checkBtn;
-        this.hintBtn = hintBtn;
-        this.isReverse = isReverse;
-        
-        const title = this.container.querySelector('h3');
-        if (title) title.textContent = this.isReverse ? "Übersetze ins Tschechische:" : "Übersetze ins Deutsche:";
-
-        this.checkBtn.addEventListener('click', () => this.check());
-        this.hintBtn.addEventListener('click', () => this.showHint());
-        this.nextWord();
-    }
-
-    clean(text) {
-        return text.split(',')[0].replace(/\(.*\)/g, '').trim();
-    }
-
-    nextWord() {
-        if (!this.words || this.words.length === 0) return;
-        this.target = this.words[Math.floor(Math.random() * this.words.length)];
-        
-        if (this.isReverse) {
-            this.promptEl.textContent = this.target.german;
-            speakGerman(this.target.german);
-        } else {
-            this.promptEl.textContent = this.clean(this.target.czech); 
-        }
-
-        this.inputEl.value = '';
-        this.feedbackEl.textContent = '';
-        this.inputEl.focus();
-    }
-
-    check() {
-        const inputVal = this.inputEl.value.trim().toLowerCase();
-        let correctVal = this.isReverse ? this.clean(this.target.czech).toLowerCase() : this.target.german.toLowerCase();
-        if (inputVal === correctVal) {
-            this.feedbackEl.textContent = 'Richtig!';
-            this.feedbackEl.style.color = '#10b981';
-            speakGerman(this.target.german);
-            setTimeout(() => this.nextWord(), 1000);
-        } else {
-            this.feedbackEl.textContent = `Falsch. Richtig ist: ${this.isReverse ? this.clean(this.target.czech) : this.target.german}`;
-            this.feedbackEl.style.color = '#ef4444';
-            speakGerman(this.target.german);
-        }
-    }
-
-    showHint() {
-        const targetText = this.isReverse ? this.clean(this.target.czech) : this.target.german;
-        if (targetText) {
-            const hint = targetText.substring(0, 3);
-            this.inputEl.value = hint;
-            this.inputEl.focus();
-        }
-    }
-    
+    constructor(words, container, promptEl, inputEl, checkBtn, hintBtn, feedbackEl, nextBtn, isReverse) { this.words = words; this.container = container; this.promptEl = promptEl; this.inputEl = inputEl; this.feedbackEl = feedbackEl; this.checkBtn = checkBtn; this.hintBtn = hintBtn; this.isReverse = isReverse; const title = this.container.querySelector('h3'); if (title) title.textContent = this.isReverse ? "Übersetze ins Tschechische:" : "Übersetze ins Deutsche:"; this.checkBtn.addEventListener('click', () => this.check()); this.hintBtn.addEventListener('click', () => this.showHint()); this.nextWord(); }
+    clean(text) { return text.split(',')[0].replace(/\(.*\)/g, '').trim(); }
+    nextWord() { if (!this.words || this.words.length === 0) return; this.target = this.words[Math.floor(Math.random() * this.words.length)]; if (this.isReverse) { this.promptEl.textContent = this.target.german; speakGerman(this.target.german); } else { this.promptEl.textContent = this.clean(this.target.czech); } this.inputEl.value = ''; this.feedbackEl.textContent = ''; this.inputEl.focus(); }
+    check() { const inputVal = this.inputEl.value.trim().toLowerCase(); let correctVal = this.isReverse ? this.clean(this.target.czech).toLowerCase() : this.target.german.toLowerCase(); if (inputVal === correctVal) { this.feedbackEl.textContent = 'Richtig!'; this.feedbackEl.style.color = '#10b981'; speakGerman(this.target.german); setTimeout(() => this.nextWord(), 1000); } else { this.feedbackEl.textContent = `Falsch. Richtig ist: ${this.isReverse ? this.clean(this.target.czech) : this.target.german}`; this.feedbackEl.style.color = '#ef4444'; speakGerman(this.target.german); } }
+    showHint() { const targetText = this.isReverse ? this.clean(this.target.czech) : this.target.german; if (targetText) { const hint = targetText.substring(0, 3); this.inputEl.value = hint; this.inputEl.focus(); } }
     destroy() {}
 }
 
 /* =========================================
-   6. SENTENCE BUILDER LOGIC (PERFECT EDITION - NO GUESSING)
+   6. SENTENCE BUILDER LOGIC (PURE DATA DRIVEN)
    ========================================= */
 class SentenceGameLogic {
-    constructor(words, container, promptEl, areaEl, bankEl, checkBtn, feedbackEl) {
-        this.rawWords = words;
+    constructor(sentences, container, promptEl, areaEl, bankEl, checkBtn, feedbackEl) {
+        // Accept direct sentence objects: { german: "...", czech: "..." }
+        this.sentences = sentences || [];
+        
         this.container = container;
         this.promptEl = promptEl;
         this.areaEl = areaEl;
         this.bankEl = bankEl;
         this.checkBtn = checkBtn;
         this.feedbackEl = feedbackEl;
-        
-        this.nouns = this.filterNouns(words);
-        this.adjectives = this.filterAdjectives(words);
         
         this.currentSentence = [];
         this.builtSentence = [];
@@ -758,70 +125,9 @@ class SentenceGameLogic {
         this.nextRound();
     }
 
-    cleanCzech(text) {
-        return text.split(',')[0].replace(/\(.*\)/g, '').trim();
-    }
-
-    // --- HARDCORE LOGIC: ONLY USE DATA THAT IS EXPLICITLY MARKED ---
-    filterNouns(words) {
-        return words.filter(w => {
-            const g = w.german.toLowerCase();
-            // 1. Must be a noun (der/die/das)
-            // 2. MUST have 'cz_gender' defined in JSON (m, f, n, pl)
-            const isNoun = g.startsWith("der ") || g.startsWith("die ") || g.startsWith("das ");
-            return isNoun && w.cz_gender; // HERE IS THE GUARD
-        }).map(w => {
-            const parts = w.german.split(" ");
-            const czClean = this.cleanCzech(w.czech);
-            return {
-                article: parts[0], 
-                noun: parts.slice(1).join(" "),
-                czech: czClean,
-                czGender: w.cz_gender // Use explicit data
-            };
-        });
-    }
-
-    filterAdjectives(words) {
-        // Blacklist for bad adjectives (pronouns etc.)
-        const blacklist = ["jeder", "jede", "jedes", "alle", "manche", "dieser", "diese", "dieses", "mein", "dein", "sein", "ihr", "unser", "euer", "kein", "hier", "dort", "da", "links", "rechts", "oben", "unten", "heute", "morgen", "gestern", "bald", "nie", "oft", "immer", "aber", "und", "oder", "denn"];
-
-        return words.filter(w => {
-            const g = w.german;
-            const cz = this.cleanCzech(w.czech);
-            const isCleanWord = !g.includes(',') && !g.includes('/');
-            const isNotBlacklisted = !blacklist.some(bad => g.toLowerCase().startsWith(bad));
-            const isAdjectiveLike = /^[a-zäöü]/.test(g) && !g.endsWith("en");
-            const isCzechInflectable = cz.endsWith('ý'); // Only use adjectives we can inflect!
-
-            return isCleanWord && isNotBlacklisted && isAdjectiveLike && isCzechInflectable;
-        }).map(w => ({ german: w.german, czech: this.cleanCzech(w.czech) }));
-    }
-
-    getDemonstrative(gender) {
-        if (gender === 'f') return 'Ta';
-        if (gender === 'n') return 'To';
-        if (gender === 'pl') return 'Ty';
-        return 'Ten';
-    }
-
-    inflectCzechAdj(adj, gender) {
-        if (!adj.endsWith('ý')) return adj; 
-        const root = adj.slice(0, -1);
-        if (gender === 'f') return root + 'á';
-        if (gender === 'n') return root + 'é';
-        if (gender === 'pl') return root + 'é'; 
-        return adj; 
-    }
-
     nextRound() {
-        if (this.nouns.length === 0) {
-            this.promptEl.innerHTML = "Daten fehlen! Du musst im JSON <code>\"cz_gender\": \"m\"</code> (oder f/n/pl) zu den Substantiven hinzufügen.";
-            this.bankEl.innerHTML = "";
-            return;
-        }
-        if (this.adjectives.length === 0) {
-            this.promptEl.textContent = "Du brauchst eine Lektion mit Adjektiven (die auf -ý enden).";
+        if (!this.sentences || this.sentences.length === 0) {
+            this.promptEl.innerHTML = "Keine Sätze für die gewählten Lektionen gefunden!";
             this.bankEl.innerHTML = "";
             return;
         }
@@ -832,32 +138,19 @@ class SentenceGameLogic {
         this.areaEl.className = 'sentence-area';
         this.builtSentence = [];
 
-        const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)];
-        const adj = this.adjectives[Math.floor(Math.random() * this.adjectives.length)];
+        // Pick a random sentence object
+        const target = this.sentences[Math.floor(Math.random() * this.sentences.length)];
         
-        // "Ten pes je starý."
-        const czDemonstrative = this.getDemonstrative(noun.czGender);
-        const czAdj = this.inflectCzechAdj(adj.czech, noun.czGender);
-        
-        // Verb: je / jsou (for plural)
-        const verbCz = noun.czGender === 'pl' ? 'jsou' : 'je';
-        let verbDe = 'ist';
-        if (noun.czGender === 'pl') verbDe = 'sind'; 
+        // Split German sentence into words (tokenize)
+        // Basic regex to keep punctuation attached or split? 
+        // Simple approach: Split by spaces.
+        this.currentSentence = target.german.split(' ');
 
-        const czSentence = `${czDemonstrative} ${noun.czech} ${verbCz} ${czAdj}.`;
-        
-        const deParts = [
-            this.capitalize(noun.article), 
-            noun.noun, 
-            verbDe, 
-            adj.german, 
-            "."
-        ];
+        // Show Czech prompt
+        this.promptEl.textContent = target.czech;
 
-        this.currentSentence = deParts;
-        this.promptEl.textContent = czSentence;
-
-        let partsForBank = [...deParts];
+        // Create Shuffle Bank
+        let partsForBank = [...this.currentSentence];
         partsForBank.sort(() => Math.random() - 0.5);
 
         partsForBank.forEach((word) => {
@@ -865,14 +158,12 @@ class SentenceGameLogic {
             el.className = 'sentence-word';
             el.textContent = word;
             el.addEventListener('click', () => {
-                speakGerman(word);
+                // Optional: Speak word on click? speakGerman(word);
                 this.moveToArea(el, word);
             });
             this.bankEl.appendChild(el);
         });
     }
-
-    capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
     moveToArea(el, word) {
         if (el.classList.contains('used')) return;
@@ -883,6 +174,7 @@ class SentenceGameLogic {
         inArea.addEventListener('click', () => {
             inArea.remove();
             el.classList.remove('used');
+            // Remove first occurrence
             const index = this.builtSentence.indexOf(word);
             if (index > -1) this.builtSentence.splice(index, 1);
         });
@@ -898,7 +190,7 @@ class SentenceGameLogic {
             this.feedbackEl.textContent = "Perfekt!";
             this.feedbackEl.style.color = '#10b981';
             this.areaEl.classList.add('correct-flash');
-            speakGerman(correct);
+            speakGerman(correct); // Speak full German sentence
             setTimeout(() => this.nextRound(), 2500);
         } else {
             this.feedbackEl.textContent = "Versuch es nochmal.";
@@ -911,7 +203,7 @@ class SentenceGameLogic {
 }
 
 /* =========================================
-   9. GAME MANAGER (UPDATED)
+   7. GAME MANAGER (UPDATED)
    ========================================= */
 class GameManager {
     constructor() {
@@ -921,6 +213,7 @@ class GameManager {
         this.backBtn = document.querySelector('#activeGameContainer .back-btn');
         this.restartBtn = document.querySelector('.restart-btn');
         this.words = [];
+        this.sentences = []; // NEW: Store sentences
         this.activeGame = null;
         this.currentGameId = null; 
         this.options = { reverse: false };
@@ -936,9 +229,16 @@ class GameManager {
         if (this.restartBtn) this.restartBtn.addEventListener('click', () => this.restartActiveGame());
     }
 
+    // NEW METHOD SIGNATURE
+    setData(words, sentences) {
+        this.words = words || [];
+        this.sentences = sentences || [];
+        console.log(`GameManager: ${this.words.length} words, ${this.sentences.length} sentences.`);
+    }
+
+    // OLD METHOD BACKWARD COMPATIBILITY
     setWords(words) {
         this.words = words || [];
-        console.log("GameManager received words:", this.words.length);
     }
 
     setOptions(options) {
@@ -979,7 +279,8 @@ class GameManager {
         } else if (gameId === 'sentences') {
             const ui = this._createSentenceUI();
             this.gameViewport.appendChild(ui.container);
-            this.activeGame = new SentenceGameLogic(this.words, ui.container, ui.promptEl, ui.areaEl, ui.bankEl, ui.checkBtn, ui.feedbackEl);
+            // PASS SENTENCES INSTEAD OF WORDS
+            this.activeGame = new SentenceGameLogic(this.sentences, ui.container, ui.promptEl, ui.areaEl, ui.bankEl, ui.checkBtn, ui.feedbackEl);
         }
     }
 
