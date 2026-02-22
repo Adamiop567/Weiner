@@ -1,9 +1,13 @@
 class App {
     constructor() {
-        this.data = null;
+        this.data = { lessons: [] }; // Slovíčka
+        this.sentenceData = [];      // Věty (nové)
+        
         this.currentWords = [];
+        this.currentSentences = [];  // Filtrované věty pro aktuální výběr
+
         this.selectedLessons = new Set();
-        this.selectedPages = new Set();   
+        this.selectedPages = new Set();
         this.isReverseMode = false;
 
         // DOM Elements
@@ -11,9 +15,7 @@ class App {
         this.checkboxesPages = document.getElementById('checkboxes-pages');
         this.lessonMultiselect = document.getElementById('lessonMultiselect');
         this.pageMultiselect = document.getElementById('pageMultiselect');
-        
         this.reverseModeToggle = document.getElementById('reverseModeToggle');
-        
         this.wordListContainer = document.getElementById('wordListContainer');
         this.wordCountBadge = document.getElementById('wordCountBadge');
         this.navButtons = document.querySelectorAll('.nav-btn');
@@ -28,63 +30,63 @@ class App {
 
     async init() {
         console.log("App initializing...");
-        this.dbFiles = [
+        
+        // 1. Soubory se slovíčky
+        this.vocabFiles = [
             'database 1-4.json',
             'database 5-10.json',
             'database 11-14.json',
             'database 15-18.json'
         ];
 
-        await this.loadData();
+        // 2. Soubory s větami (NOVÉ)
+        this.sentenceFiles = [
+            'sentences 1-4.json',
+            'sentences 5-10.json',
+            'sentences 11-14.json',
+            'sentences 15-18.json'
+        ];
+
+        await this.loadAllData();
         this.setupEventListeners();
         this.setupMultiselectUI();
     }
 
-    async loadData() {
+    async loadAllData() {
         try {
-            if (typeof DB_DATA !== 'undefined') {
-                this.processData([DB_DATA]);
-                return;
-            }
+            // A) Načtení slovíček
+            const vocabPromises = this.vocabFiles.map(file => fetch(file).then(r => r.ok ? r.json() : null).catch(e => null));
+            const vocabResults = await Promise.all(vocabPromises);
+            
+            let allLessons = [];
+            vocabResults.filter(d => d && d.lessons).forEach(d => {
+                allLessons = allLessons.concat(d.lessons);
+            });
+            allLessons.sort((a, b) => (a.number || 0) - (b.number || 0));
+            this.data = { lessons: allLessons };
 
-            const promises = this.dbFiles.map(file => fetch(file).then(res => {
-                if (!res.ok) throw new Error(`Failed to load ${file}`);
-                return res.json();
-            }).catch(err => {
-                console.warn(err);
-                return null; 
-            }));
+            // B) Načtení vět
+            const sentPromises = this.sentenceFiles.map(file => fetch(file).then(r => r.ok ? r.json() : null).catch(e => null));
+            const sentResults = await Promise.all(sentPromises);
 
-            const results = await Promise.all(promises);
-            this.processData(results);
+            this.sentenceData = [];
+            sentResults.filter(d => d && d.sentences).forEach(d => {
+                this.sentenceData = this.sentenceData.concat(d.sentences);
+            });
+
+            console.log(`Loaded: ${allLessons.length} lessons, ${this.sentenceData.length} sentences.`);
+            this.populateLessonCheckboxes();
 
         } catch (error) {
-            console.error("Failed to load databases:", error);
-            this.wordListContainer.innerHTML = `
-                <div class="empty-state glass-panel">
-                    <h2 style="color: #ff7675">Fehler beim Laden</h2>
-                    <p>Datenbank konnte nicht geladen werden.</p>
-                </div>
-            `;
+            console.error("Critical Error loading data:", error);
+            this.wordListContainer.innerHTML = `<div class="empty-state glass-panel"><h2 style="color:#ff7675">Fehler</h2><p>Datenbank konnte nicht geladen werden.</p></div>`;
         }
     }
 
-    processData(results) {
-        const validData = results.filter(data => data && data.lessons);
-        let allLessons = [];
-        validData.forEach(d => { allLessons = allLessons.concat(d.lessons); });
-        allLessons.sort((a, b) => (a.number || 0) - (b.number || 0));
-
-        this.data = { lessons: allLessons };
-        this.populateLessonCheckboxes();
-    }
-
     populateLessonCheckboxes() {
-        if (!this.data || !this.data.lessons) return;
-
+        if (!this.data.lessons) return;
         this.checkboxesLessons.innerHTML = '';
         
-        // "Alles auswählen"
         const selectAllLabel = document.createElement('label');
         selectAllLabel.innerHTML = `<input type="checkbox" id="selectAllLessons" /> <strong>Alles auswählen</strong>`;
         this.checkboxesLessons.appendChild(selectAllLabel);
@@ -92,7 +94,6 @@ class App {
         this.data.lessons.forEach((lesson) => {
             const label = document.createElement('label');
             const name = lesson.name ? ` - ${lesson.name}` : '';
-            // Jen číslo a jméno
             label.innerHTML = `<input type="checkbox" value="${lesson.number}" class="lesson-cb" /> ${lesson.number}${name}`;
             this.checkboxesLessons.appendChild(label);
         });
@@ -101,7 +102,6 @@ class App {
     populatePageCheckboxes() {
         this.checkboxesPages.innerHTML = '';
         this.selectedPages.clear();
-
         let availablePages = [];
         
         this.selectedLessons.forEach(lessonNum => {
@@ -132,99 +132,63 @@ class App {
             this.checkboxesPages.appendChild(label);
             this.selectedPages.add(p.id);
         });
-
         this.updateCurrentWords();
     }
 
     setupMultiselectUI() {
-        let expandedLessons = false;
-        this.lessonMultiselect.querySelector('.selectBox').addEventListener('click', () => {
-            if (!expandedLessons) {
-                this.lessonMultiselect.classList.add('active');
-                expandedLessons = true;
-            } else {
-                this.lessonMultiselect.classList.remove('active');
-                expandedLessons = false;
-            }
-        });
-
-        let expandedPages = false;
-        this.pageMultiselect.querySelector('.selectBox').addEventListener('click', () => {
-            if (!expandedPages) {
-                this.pageMultiselect.classList.add('active');
-                expandedPages = true;
-            } else {
-                this.pageMultiselect.classList.remove('active');
-                expandedPages = false;
-            }
-        });
+        const toggle = (elem, state) => { 
+            if(!state) elem.classList.add('active'); 
+            else elem.classList.remove('active'); 
+            return !state; 
+        };
+        
+        let expL = false, expP = false;
+        
+        this.lessonMultiselect.querySelector('.selectBox').addEventListener('click', () => { expL = toggle(this.lessonMultiselect, expL); });
+        this.pageMultiselect.querySelector('.selectBox').addEventListener('click', () => { expP = toggle(this.pageMultiselect, expP); });
 
         document.addEventListener('click', (e) => {
-            if (!this.lessonMultiselect.contains(e.target)) {
-                this.lessonMultiselect.classList.remove('active');
-                expandedLessons = false;
-            }
-            if (!this.pageMultiselect.contains(e.target)) {
-                this.pageMultiselect.classList.remove('active');
-                expandedPages = false;
-            }
+            if (!this.lessonMultiselect.contains(e.target)) { this.lessonMultiselect.classList.remove('active'); expL = false; }
+            if (!this.pageMultiselect.contains(e.target)) { this.pageMultiselect.classList.remove('active'); expP = false; }
         });
     }
 
     setupEventListeners() {
         this.navButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const viewName = btn.dataset.view;
-                this.switchView(viewName);
-            });
+            btn.addEventListener('click', () => this.switchView(btn.dataset.view));
         });
 
         this.checkboxesLessons.addEventListener('change', (e) => {
             if (e.target.id === 'selectAllLessons') {
-                const allCbs = this.checkboxesLessons.querySelectorAll('.lesson-cb');
-                allCbs.forEach(cb => {
-                    cb.checked = e.target.checked;
-                    const val = parseInt(cb.value);
-                    if (e.target.checked) this.selectedLessons.add(val);
-                    else this.selectedLessons.delete(val);
-                });
+                const cbs = this.checkboxesLessons.querySelectorAll('.lesson-cb');
+                cbs.forEach(cb => { cb.checked = e.target.checked; const v = parseInt(cb.value); e.target.checked ? this.selectedLessons.add(v) : this.selectedLessons.delete(v); });
             } else if (e.target.classList.contains('lesson-cb')) {
-                const val = parseInt(e.target.value);
-                if (e.target.checked) this.selectedLessons.add(val);
-                else this.selectedLessons.delete(val);
-                
+                const v = parseInt(e.target.value);
+                e.target.checked ? this.selectedLessons.add(v) : this.selectedLessons.delete(v);
+                // Update select all logic
                 const all = this.checkboxesLessons.querySelectorAll('.lesson-cb');
-                const checked = this.checkboxesLessons.querySelectorAll('.lesson-cb:checked');
-                document.getElementById('selectAllLessons').checked = (all.length === checked.length);
+                const chk = this.checkboxesLessons.querySelectorAll('.lesson-cb:checked');
+                document.getElementById('selectAllLessons').checked = (all.length === chk.length);
             }
             this.populatePageCheckboxes();
         });
 
         this.checkboxesPages.addEventListener('change', (e) => {
             if (e.target.id === 'selectAllPages') {
-                const allCbs = this.checkboxesPages.querySelectorAll('.page-cb');
-                allCbs.forEach(cb => {
-                    cb.checked = e.target.checked;
-                    if (e.target.checked) this.selectedPages.add(cb.value);
-                    else this.selectedPages.delete(cb.value);
-                });
+                const cbs = this.checkboxesPages.querySelectorAll('.page-cb');
+                cbs.forEach(cb => { cb.checked = e.target.checked; e.target.checked ? this.selectedPages.add(cb.value) : this.selectedPages.delete(cb.value); });
             } else if (e.target.classList.contains('page-cb')) {
-                if (e.target.checked) this.selectedPages.add(e.target.value);
-                else this.selectedPages.delete(e.target.value);
-
+                e.target.checked ? this.selectedPages.add(e.target.value) : this.selectedPages.delete(e.target.value);
                 const all = this.checkboxesPages.querySelectorAll('.page-cb');
-                const checked = this.checkboxesPages.querySelectorAll('.page-cb:checked');
-                document.getElementById('selectAllPages').checked = (all.length === checked.length);
-                
+                const chk = this.checkboxesPages.querySelectorAll('.page-cb:checked');
+                document.getElementById('selectAllPages').checked = (all.length === chk.length);
                 this.updateCurrentWords();
             }
         });
 
         this.reverseModeToggle.addEventListener('change', (e) => {
             this.isReverseMode = e.target.checked;
-            if (window.GameManager) {
-                window.GameManager.setOptions({ reverse: this.isReverseMode });
-            }
+            if (window.GameManager) window.GameManager.setOptions({ reverse: this.isReverseMode });
         });
     }
 
@@ -233,42 +197,42 @@ class App {
             if (btn.dataset.view === viewName) btn.classList.add('active');
             else btn.classList.remove('active');
         });
-
         Object.keys(this.views).forEach(key => {
-            const view = this.views[key];
-            if (!view) return;
-            if (key === viewName) {
-                view.classList.remove('hidden');
-                view.classList.add('active');
-            } else {
-                view.classList.add('hidden');
-                view.classList.remove('active');
+            if(this.views[key]) {
+                if (key === viewName) { this.views[key].classList.remove('hidden'); this.views[key].classList.add('active'); }
+                else { this.views[key].classList.add('hidden'); this.views[key].classList.remove('active'); }
             }
         });
     }
 
     updateCurrentWords() {
         this.currentWords = [];
-        
-        if (this.selectedLessons.size > 0 && this.selectedPages.size > 0) {
+        this.currentSentences = [];
+
+        if (this.selectedLessons.size > 0) {
+            // 1. Filter Words (based on pages)
             this.selectedLessons.forEach(lessonNum => {
                 const lesson = this.data.lessons.find(l => l.number == lessonNum);
                 if (lesson && lesson.pages) {
                     lesson.pages.forEach(p => {
-                        const pageId = `${lesson.number}-${p.number}`;
-                        if (this.selectedPages.has(pageId)) {
+                        if (this.selectedPages.has(`${lesson.number}-${p.number}`)) {
                             this.currentWords = this.currentWords.concat(p.words || []);
                         }
                     });
                 }
             });
+
+            // 2. Filter Sentences (based on LESSONS only)
+            // (Předpokládáme, že věty jsou přiřazené k lekci, ne ke stránce)
+            this.currentSentences = this.sentenceData.filter(s => this.selectedLessons.has(s.lesson));
         }
 
         this.updateStats();
         this.renderWords();
 
         if (window.GameManager) {
-            window.GameManager.setWords(this.currentWords);
+            // PŘEDÁVÁME SLOVÍČKA I VĚTY
+            window.GameManager.setData(this.currentWords, this.currentSentences);
             window.GameManager.setOptions({ reverse: this.isReverseMode });
         }
     }
@@ -279,36 +243,21 @@ class App {
 
     renderWords() {
         this.wordListContainer.innerHTML = '';
-
         if (this.currentWords.length === 0) {
-            this.wordListContainer.innerHTML = `
-                <div class="empty-state glass-panel">
-                    <h2>Wähle Lektionen</h2>
-                    <p>Markiere Lektionen und Seiten im Menü oben.</p>
-                </div>
-            `;
+            this.wordListContainer.innerHTML = `<div class="empty-state glass-panel"><h2>Wähle Lektionen</h2><p>Markiere Lektionen und Seiten im Menü oben.</p></div>`;
             return;
         }
-
         this.currentWords.forEach(word => {
             const german = word.german || "???";
             const czech = word.czech || "???";
-            const example = word.example || "";
             const plural = word.plural ? `(Pl. ${word.plural})` : "";
-
+            const example = word.example ? `<div class="w-example">"${word.example}"</div>` : '';
             const card = document.createElement('div');
             card.className = 'word-card';
-            card.innerHTML = `
-                <div class="w-german">${german}</div>
-                <div class="w-czech">${czech}</div>
-                ${plural ? `<div class="w-meta">${plural}</div>` : ''}
-                ${example ? `<div class="w-example">"${example}"</div>` : ''}
-            `;
+            card.innerHTML = `<div class="w-german">${german}</div><div class="w-czech">${czech}</div>${plural ? `<div class="w-meta">${plural}</div>` : ''}${example}`;
             this.wordListContainer.appendChild(card);
         });
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new App();
-});
+document.addEventListener('DOMContentLoaded', () => { window.app = new App(); });
